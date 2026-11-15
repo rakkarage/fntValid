@@ -528,7 +528,7 @@
 			$("vb").textContent = base; $("vl").textContent = lh; $("xa").textContent = c.xa;
 			const d = bottom - base;
 			const btxt = d == 0 ? "on base" : (d > 0 ? d + "px below base" : (-d) + "px above base");
-			$("anaInfo").innerHTML = `<b>“${L(sel)}”</b> <span class="mut">id ${sel}</span><br><span class="${d ? "warn" : "good"}">baseline: ${btxt}</span><br>(xoffset, yoffset) = (${c.xo}, ${c.yo})<br>bottom = ${c.yo} + ${c.h} = ${bottom}<br>xadvance = ${c.xa}`;
+			$("anaInfo").innerHTML = `<b>“${L(sel)}”</b> <span class="mut">id ${sel}</span><br>(xoffset, yoffset) = (${c.xo}, ${c.yo})<br>bottom = ${c.yo} + ${c.h} = ${bottom}<br>xadvance = ${c.xa}<br><span class="${d ? "warn" : "good"}">baseline: ${btxt}</span>`;
 		}
 		function atl() {
 			const Z = 4, x = ctxOf($("atlas"), hdr.sw * Z, hdr.sh * Z); x.fillStyle = css("--card"); x.fillRect(0, 0, x.canvas.width, x.canvas.height); x.drawImage(img, 0, 0, hdr.sw * Z, hdr.sh * Z);
