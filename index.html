@@ -330,9 +330,16 @@
 			x.fillStyle = "rgba(120,120,200,.12)"; x.fillRect(ox, oy, c.xa * Z, lh * Z);
 			x.drawImage(img, c.x, c.y, c.w, c.h, ox + c.xo * Z, oy + c.yo * Z, c.w * Z, c.h * Z);
 			x.setLineDash([4, 3]); x.strokeStyle = css("--mut"); x.strokeRect(ox + c.xo * Z + .5, oy + c.yo * Z + .5, c.w * Z, c.h * Z); x.setLineDash([]);
-			const hl = (y, col, t) => { x.strokeStyle = col; x.lineWidth = 2; x.beginPath(); x.moveTo(Z, oy + y * Z); x.lineTo(W - Z, oy + y * Z); x.stroke(); lbl(x, t, W - Z * 9, oy + y * Z - 3, col) };
+			const hl = (y, col, parts) => { x.strokeStyle = col; x.lineWidth = 2; x.beginPath(); x.moveTo(Z, oy + y * Z); x.lineTo(W - Z, oy + y * Z); x.stroke(); let px = W - Z * 9, py = oy + y * Z - 3; x.font = "12px system-ui"; parts.forEach(p => { x.fillStyle = p.col; x.fillText(p.t, px, py); px += x.measureText(p.t).width }) };
 			const bottom = c.yo + c.h;
-			hl(0, css("--r"), "top 0"); hl(base, css("--g"), "base " + base); hl(lh, css("--b"), "lineHeight " + lh); hl(bottom, css("--o"), "bottom " + bottom);
+			const guides = [{ y: 0, n: "top", v: 0, col: css("--r") }, { y: base, n: "base", v: base, col: css("--g") }, { y: lh, n: "lineHeight", v: lh, col: css("--b") }, { y: bottom, n: "bottom", v: bottom, col: css("--o") }];
+			const gs = [];
+			guides.forEach(g => { const o = gs.find(e => e.y === g.y); if (o) o.items.push(g); else gs.push({ y: g.y, v: g.v, items: [g] }) });
+			gs.forEach(g => {
+				const lcol = g.items.length > 1 ? (g.items.find(i => i.n === "base") || g.items[0]).col : g.items[0].col;
+				const parts = []; g.items.forEach((it, i) => { if (i) parts.push({ t: ", ", col: it.col }); parts.push({ t: it.n, col: it.col }) }); parts.push({ t: " " + g.v, col: lcol });
+				hl(g.y, lcol, parts);
+			});
 			x.strokeStyle = css("--acc"); x.lineWidth = 1; x.beginPath(); x.moveTo(ox + c.xa * Z, oy); x.lineTo(ox + c.xa * Z, oy + lh * Z); x.stroke();
 			$("vb").textContent = base; $("vl").textContent = lh; $("xa").textContent = c.xa;
 			const d = bottom - base;
