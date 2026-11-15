@@ -245,6 +245,15 @@
 			<label>base <input type="number" id="ibase"></label><label>lineHeight <input type="number" id="ilh"></label>
 			<p id="rep"></p>
 		</div>
+		<div class="card"><b>Rule check</b> <span id="sum" class="mut"></span><br>
+			<label>descenders <input id="dset" value="gjpqy" size="8"></label><label>shadow px <input type="number"
+					id="shd" value="0"></label><label>tolerance <input type="number" id="tol" value="0"></label><br>
+			<button id="fixb">Snap non-descenders to baseline</button> <button id="fixl">lineHeight = deepest glyph
+				bottom</button>
+			<p class="mut">Shadow px: rows under each glyph that are shadow, not letter body (try 2 for Venice16). Click
+				a chip to select that glyph.</p>
+			<div id="chk"></div>
+		</div>
 		<div class="card">
 			<label>Preview text <input id="txt" size="34" value="Hag Jyp 0123 Quick fox, jumps!"></label>
 			<label>zoom <select id="zm">
@@ -312,7 +321,22 @@
 			const c = C[sel]; $("iyo").value = c.yo; $("ixo").value = c.xo; $("ixa").value = c.xa; $("ibase").value = base; $("ilh").value = lh;
 			$("selinfo").innerHTML = `id ${sel} “${L(sel)}” · atlas <code>${c.x},${c.y}</code> · size <code>${c.w}×${c.h}</code>`
 		}
-		function draw() { grid(); sync(); anat(); prev(); atl(); rep() }
+		function checks() {
+			const sh = +$("shd").value, tol = +$("tol").value, ds = $("dset").value, isD = s => ds.includes(s), al = s => /[A-Za-z0-9]/.test(s), bt = c => c.yo + c.h;
+			const R = [["Pokes above line top (yoffset &lt; 0)", c => c.yo < 0, "glyph drawn above the line box"],
+			["Non-descender not on baseline", (c, s) => al(s) && !isD(s) && Math.abs(bt(c) - sh - base) > tol, "bottom ≠ base (after shadow, within tolerance)"],
+			["Descender does not drop below baseline", (c, s) => isD(s) && bt(c) - sh <= base, "tail never passes base"],
+			["Extends past lineHeight", c => bt(c) > lh, "overflows the line box: can clip, overlap the next line, or run off screen"],
+			["Outside atlas image", c => c.x < 0 || c.y < 0 || c.x + c.w > hdr.sw || c.y + c.h > hdr.sh, "rectangle leaves the PNG"],
+			["xadvance too small", c => c.xa < c.xo + c.w, "glyph is wider than its advance, so neighbors collide"]];
+			const out = $("chk"), all = new Set; out.innerHTML = "";
+			R.forEach(([t, f, h]) => { const bad = Object.keys(C).filter(k => f(C[k], L(+k))); bad.forEach(k => all.add(k)); const d = document.createElement("div"); d.innerHTML = `<p style="margin:.5em 0 .2em"><b>${bad.length ? "✗" : "✓"} ${t}</b> — ${bad.length} <span class="mut">${h}</span></p>`; const w = document.createElement("div"); w.style.cssText = "display:flex;flex-wrap:wrap;gap:3px"; bad.forEach(k => { const b = document.createElement("button"); b.textContent = k == 32 ? "␣" : L(+k); b.style.cssText = "width:30px;padding:0" + (k == sel ? ";background:var(--acc);color:#fff" : ""); b.onclick = () => { sel = +k; draw() }; w.appendChild(b) }); d.appendChild(w); out.appendChild(d) });
+			$("sum").textContent = `${all.size} of ${Object.keys(C).length} glyphs break at least one rule`
+		}
+		$("fixb").onclick = () => { const sh = +$("shd").value, ds = $("dset").value; Object.keys(C).forEach(k => { const s = L(+k), c = C[k]; if (/[A-Za-z0-9]/.test(s) && !ds.includes(s)) c.yo = base + sh - c.h }); draw() };
+		$("fixl").onclick = () => { lh = Math.max(...Object.values(C).map(c => c.yo + c.h)); draw() };
+		["dset", "shd", "tol"].forEach(i => $(i).oninput = checks);
+		function draw() { grid(); sync(); anat(); prev(); atl(); rep(); checks() }
 		$("iyo").oninput = e => { C[sel].yo = +e.target.value; draw() }; $("ixo").oninput = e => { C[sel].xo = +e.target.value; draw() }; $("ixa").oninput = e => { C[sel].xa = +e.target.value; draw() };
 		$("ibase").oninput = e => { base = +e.target.value; draw() }; $("ilh").oninput = e => { lh = +e.target.value; draw() };
 		$("up").onclick = () => { C[sel].yo--; draw() }; $("dn").onclick = () => { C[sel].yo++; draw() };
