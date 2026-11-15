@@ -204,7 +204,8 @@
 		<div class="card">
 			<p>Every line of text is a box <code>lineHeight</code> pixels tall. The pen starts at the top-left of that
 				box. Each glyph is a rectangle cut from the atlas PNG (<code>x y width height</code>) and drawn at
-				<b>pen + (xoffset, yoffset)</b>. After drawing, the pen moves right by <code>xadvance</code>.</p>
+				<b>pen + (xoffset, yoffset)</b>. After drawing, the pen moves right by <code>xadvance</code>.
+			</p>
 			<div class="row">
 				<div class="sc"><canvas id="anat"></canvas></div>
 				<div>
@@ -215,7 +216,8 @@
 						top to the next. Here <code id="vl"></code>.</p>
 					<p><span class="dot" style="background:var(--o)"></span><b>Glyph bottom</b> =
 						<code>yoffset + height</code>. For a letter that sits on the baseline this should equal
-						<code>base</code>; descenders (g, j, p, q, y) go below it.</p>
+						<code>base</code>; descenders (g, j, p, q, y) go below it.
+					</p>
 					<p id="anaInfo"></p>
 					<p class="mut">Pick a character in the editor below (or click here and use ← →).</p>
 				</div>
@@ -250,6 +252,8 @@
 					id="shd" value="0"></label><label>tolerance <input type="number" id="tol" value="0"></label><br>
 			<button id="fixb">Snap non-descenders to baseline</button> <button id="fixl">lineHeight = deepest glyph
 				bottom</button>
+			<label>gap <input type="number" id="gap" value="1"></label><button id="norm">Normalize</button> <span
+				class="mut">shift so top = 0, base = where letters end, lineHeight = deepest + gap</span>
 			<p class="mut">Shadow px: rows under each glyph that are shadow, not letter body (try 2 for Venice16). Click
 				a chip to select that glyph.</p>
 			<div id="chk"></div>
@@ -335,6 +339,7 @@
 		}
 		$("fixb").onclick = () => { const sh = +$("shd").value, ds = $("dset").value; Object.keys(C).forEach(k => { const s = L(+k), c = C[k]; if (/[A-Za-z0-9]/.test(s) && !ds.includes(s)) c.yo = base + sh - c.h }); draw() };
 		$("fixl").onclick = () => { lh = Math.max(...Object.values(C).map(c => c.yo + c.h)); draw() };
+		$("norm").onclick = () => { const v = Object.values(C), dy = -Math.min(...v.map(c => c.yo)); v.forEach(c => c.yo += dy); const ds = $("dset").value, m = {}; Object.keys(C).forEach(k => { const s = L(+k); if (/[A-Za-z0-9]/.test(s) && !ds.includes(s)) { const b = C[k].yo + C[k].h; m[b] = (m[b] || 0) + 1 } }); const t = Object.entries(m).sort((a, b) => b[1] - a[1])[0]; if (t) base = +t[0]; lh = Math.max(...v.map(c => c.yo + c.h)) + (+$("gap").value); draw() };
 		["dset", "shd", "tol"].forEach(i => $(i).oninput = checks);
 		function draw() { grid(); sync(); anat(); prev(); atl(); rep(); checks() }
 		$("iyo").oninput = e => { C[sel].yo = +e.target.value; draw() }; $("ixo").oninput = e => { C[sel].xo = +e.target.value; draw() }; $("ixa").oninput = e => { C[sel].xa = +e.target.value; draw() };
@@ -360,7 +365,7 @@
 			const t = $("fnt").value, n = {}; const g = (s, k) => { const m = s.match(new RegExp("\\b" + k + '="?(-?[^\\s"]+)')); return m ? m[1] : null };
 			t.split("\n").forEach(l => {
 				if (/^char /.test(l)) { const id = +g(l, "id"); n[id] = { x: +g(l, "x"), y: +g(l, "y"), w: +g(l, "width"), h: +g(l, "height"), xo: +g(l, "xoffset"), yo: +g(l, "yoffset"), xa: +g(l, "xadvance") } }
-				else if (/^common /.test(l)) { lh = +g(l, "lineHeight"); base = +g(l, "base"); hdr.sw = +g(l, "scaleW"); hdr.sh = +g(l, "scaleH") } else if (/^info /.test(l)) { hdr.face = g(l, "face") || hdr.face; hdr.size = +g(l, "size") || hdr.size }
+				else if (/^common /.test(l)) { lh = +g(l, "lineHeight"); base = +g(l, "base"); hdr.sw = +g(l, "scaleW"); hdr.sh = +g(l, "scaleH") } else if (/^info /.test(l)) { hdr.face = g(l, "face") || hdr.face; hdr.size = +g(l, "size") || hdr.size } else if (/^page /.test(l)) { hdr.page = g(l, "file") || hdr.page }
 			});
 			if (Object.keys(n).length) { C = n; sel = +Object.keys(C)[0]; draw() }
 		};
