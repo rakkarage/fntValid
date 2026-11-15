@@ -60,7 +60,7 @@
 		}
 
 		main {
-			max-width: 1400px;
+			max-width: 100%;
 			margin: 0 auto;
 			padding: 12px;
 			columns: 420px;
@@ -190,8 +190,48 @@
 			color: var(--mut)
 		}
 
+		.cardname {
+			font-size: .75em;
+			color: var(--mut);
+			margin: 0 0 6px;
+			letter-spacing: .02em
+		}
+
 		.warn {
 			color: var(--o)
+		}
+
+		.preview-box {
+			position: relative
+		}
+
+		.preview-box canvas {
+			display: block;
+			width: 100%;
+			height: auto
+		}
+
+		.overlay {
+			position: absolute;
+			padding: 4px 6px;
+			border-radius: 6px;
+			background: color-mix(in srgb, var(--card) 50%, transparent);
+			font-size: .85em
+		}
+
+		.overlay p {
+			margin: .2em 0
+		}
+
+		.overlay-top {
+			top: 6px;
+			right: 6px;
+			text-align: right
+		}
+
+		.overlay-bottom {
+			bottom: 6px;
+			left: 6px
 		}
 
 		p {
@@ -209,12 +249,11 @@
 <body>
 	<main>
 		<div class="card">
-			<div class="row">
-				<div>
-					<p id="anaInfo"></p>
-				</div>
+			<p class="cardname">Character</p>
+			<div class="preview-box">
 				<div class="sc"><canvas id="anat"></canvas></div>
-				<div>
+				<div class="overlay overlay-top" id="anaInfo"></div>
+				<div class="overlay overlay-bottom">
 					<p><span class="dot" style="background:var(--r)"></span>top</p>
 					<p><span class="dot" style="background:var(--g)"></span>base <code id="vb"></code></p>
 					<p><span class="dot" style="background:var(--b)"></span>lineHeight <code id="vl"></code></p>
@@ -225,6 +264,7 @@
 		</div>
 
 		<div class="card" id="settings">
+			<p class="cardname">Settings</p>
 			<div id="grid"></div>
 			<p id="selinfo" class="mut"></p>
 			<label>yoffset <input type="number" id="iyo"></label>
@@ -246,7 +286,7 @@
 		</div>
 
 		<div class="card">
-			<b>Checks</b> <span id="sum" class="mut"></span><br>
+			<p class="cardname">Checks <span id="sum" class="mut"></span></p>
 			<label>descenders <input id="dset" value="gjpqy" size="6"></label><br>
 			<button id="fixb">Snap to baseline</button> <button id="fixl">Fit lineHeight</button><br>
 			<label>top gap <input type="number" id="top" value="0"></label><label>bottom gap <input type="number"
@@ -255,6 +295,7 @@
 		</div>
 
 		<div class="card">
+			<p class="cardname">Text preview</p>
 			<label>Preview <input id="txt" size="28" value="Hag Jyp 0123 Quick fox, jumps!"></label>
 			<label>zoom <select id="zm">
 					<option>2</option>
@@ -268,6 +309,7 @@
 		</div>
 
 		<div class="card">
+			<p class="cardname">Font file</p>
 			<textarea id="fnt" rows="8" spellcheck="false" placeholder="Paste .fnt here"></textarea>
 			<p><button id="load">Load .fnt</button> <button id="exp">Export</button> <button id="cp">Copy</button>
 				<label>PNG <input type="file" id="png" accept="image/png"></label>
@@ -285,7 +327,7 @@
 		function ctxOf(c, w, h) { c.width = w; c.height = h; const x = c.getContext("2d"); x.imageSmoothingEnabled = false; return x }
 		function lbl(x, t, px, py, col) { x.fillStyle = col; x.font = "12px system-ui"; x.fillText(t, px, py) }
 		function anat() {
-			const c = C[sel], Z = 14, W = 24 * Z, H = (lh + 3) * Z, x = ctxOf($("anat"), W, H), ox = 4 * Z, oy = Z;
+			const c = C[sel], Z = 28, W = 24 * Z, H = (lh + 3) * Z, x = ctxOf($("anat"), W, H), ox = 4 * Z, oy = Z;
 			x.fillStyle = css("--card"); x.fillRect(0, 0, W, H);
 			x.fillStyle = "rgba(120,120,200,.12)"; x.fillRect(ox, oy, c.xa * Z, lh * Z);
 			x.drawImage(img, c.x, c.y, c.w, c.h, ox + c.xo * Z, oy + c.yo * Z, c.w * Z, c.h * Z);
@@ -296,7 +338,8 @@
 			x.strokeStyle = css("--acc"); x.lineWidth = 1; x.beginPath(); x.moveTo(ox + c.xa * Z, oy); x.lineTo(ox + c.xa * Z, oy + lh * Z); x.stroke();
 			$("vb").textContent = base; $("vl").textContent = lh; $("xa").textContent = c.xa;
 			const d = bottom - base;
-			$("anaInfo").innerHTML = `<b>“${L(sel)}”</b><br>top-left = (xoffset, yoffset) = (${c.xo}, ${c.yo})<br>bottom = yoffset + height = ${c.yo} + ${c.h} = ${bottom}<br>baseline: ${d == 0 ? "on base" : (d > 0 ? d + "px below base" : (-d) + "px above base")}<br>xadvance = ${c.xa}`;
+			const btxt = d == 0 ? "on base" : (d > 0 ? d + "px below base" : (-d) + "px above base");
+			$("anaInfo").innerHTML = `<b>“${L(sel)}”</b><br><span class="${d ? "warn" : "mut"}">baseline: ${btxt}</span><br>top-left = (xoffset, yoffset) = (${c.xo}, ${c.yo})<br>bottom = yoffset + height = ${c.yo} + ${c.h} = ${bottom}<br>xadvance = ${c.xa}`;
 		}
 		function prev() {
 			const Z = +$("zm").value, lines = $("txt").value.split("\n"), W = Math.max(260, Math.min(980, lines.reduce((m, s) => Math.max(m, [...s].reduce((a, ch) => a + ((C[ch.charCodeAt(0)] || {}).xa || 0), 0)), 0) + 8)) * Z, x = ctxOf($("prev"), W, (lines.length * lh + 4) * Z);
