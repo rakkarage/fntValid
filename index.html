@@ -252,8 +252,10 @@
 					id="shd" value="0"></label><label>tolerance <input type="number" id="tol" value="0"></label><br>
 			<button id="fixb">Snap non-descenders to baseline</button> <button id="fixl">lineHeight = deepest glyph
 				bottom</button>
-			<label>gap <input type="number" id="gap" value="1"></label><button id="norm">Normalize</button> <span
-				class="mut">shift so top = 0, base = where letters end, lineHeight = deepest + gap</span>
+			<label>top gap <input type="number" id="top" value="0"></label><label>bottom gap <input type="number"
+					id="gap" value="0"></label><button id="norm">Normalize</button> <span class="mut">shift so the
+				highest pixel sits top-gap rows down, base = where letters end, lineHeight = deepest + bottom gap (equal
+				gaps = balanced)</span>
 			<p class="mut">Shadow px: rows under each glyph that are shadow, not letter body (try 2 for Venice16). Click
 				a chip to select that glyph.</p>
 			<div id="chk"></div>
@@ -339,7 +341,7 @@
 		}
 		$("fixb").onclick = () => { const sh = +$("shd").value, ds = $("dset").value; Object.keys(C).forEach(k => { const s = L(+k), c = C[k]; if (/[A-Za-z0-9]/.test(s) && !ds.includes(s)) c.yo = base + sh - c.h }); draw() };
 		$("fixl").onclick = () => { lh = Math.max(...Object.values(C).map(c => c.yo + c.h)); draw() };
-		$("norm").onclick = () => { const v = Object.values(C), dy = -Math.min(...v.map(c => c.yo)); v.forEach(c => c.yo += dy); const ds = $("dset").value, m = {}; Object.keys(C).forEach(k => { const s = L(+k); if (/[A-Za-z0-9]/.test(s) && !ds.includes(s)) { const b = C[k].yo + C[k].h; m[b] = (m[b] || 0) + 1 } }); const t = Object.entries(m).sort((a, b) => b[1] - a[1])[0]; if (t) base = +t[0]; lh = Math.max(...v.map(c => c.yo + c.h)) + (+$("gap").value); draw() };
+		$("norm").onclick = () => { const v = Object.values(C), dy = (+$("top").value) - Math.min(...v.map(c => c.yo)); v.forEach(c => c.yo += dy); const ds = $("dset").value, m = {}; Object.keys(C).forEach(k => { const s = L(+k); if (/[A-Za-z0-9]/.test(s) && !ds.includes(s)) { const b = C[k].yo + C[k].h; m[b] = (m[b] || 0) + 1 } }); const t = Object.entries(m).sort((a, b) => b[1] - a[1])[0]; if (t) base = +t[0]; lh = Math.max(...v.map(c => c.yo + c.h)) + (+$("gap").value); draw() };
 		["dset", "shd", "tol"].forEach(i => $(i).oninput = checks);
 		function draw() { grid(); sync(); anat(); prev(); atl(); rep(); checks() }
 		$("iyo").oninput = e => { C[sel].yo = +e.target.value; draw() }; $("ixo").oninput = e => { C[sel].xo = +e.target.value; draw() }; $("ixa").oninput = e => { C[sel].xa = +e.target.value; draw() };
