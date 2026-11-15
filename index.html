@@ -442,16 +442,6 @@
 			</div>
 		</div>
 
-		<div class="card" id="checkcard">
-			<p class="cardname">Checks</p>
-			<label>descenders <input id="dset" value="gjpqy" size="6"></label>
-			<label>top gap <input type="number" id="top" value="0"></label>
-			<label>bottom gap <input type="number" id="gap" value="0"></label>
-			<div class="btns"><button class="pri" id="fixb">Snap to baseline</button><button id="fixl">Fit
-					lineHeight</button><button id="norm">Normalize</button></div>
-			<div id="chk"></div>
-		</div>
-
 		<div class="card" id="settings">
 			<p class="cardname">Settings</p>
 			<p class="mut">Click the atlas or a glyph to select. Red glyphs fail a check.</p>
@@ -475,6 +465,16 @@
 			<label>Δy <input type="number" id="dy" value="-1"></label><button id="apply">Apply</button>
 			<br><label>base <input type="number" id="ibase"></label><label>lineHeight <input type="number"
 					id="ilh"></label>
+		</div>
+
+		<div class="card" id="checkcard">
+			<p class="cardname">Checks</p>
+			<label>descenders <input id="dset" value="gjpqy" size="6"></label>
+			<label>top gap <input type="number" id="top" value="0"></label>
+			<label>bottom gap <input type="number" id="gap" value="0"></label>
+			<div class="btns"><button class="pri" id="fix"
+					title="Snap baseline and descenders, apply top gap, fit lineHeight">Auto-fix</button></div>
+			<div id="chk"></div>
 		</div>
 
 		<div class="card">
@@ -588,7 +588,7 @@
 			lh = Math.max(...keys.map(k => C[k].yo + C[k].h)) + gap;
 			draw();
 		}
-		$("fixb").onclick = autoFix; $("fixl").onclick = autoFix; $("norm").onclick = autoFix;
+		$("fix").onclick = autoFix;
 		$("dset").oninput = draw; $("top").oninput = checks; $("gap").oninput = checks;
 		function draw() {
 			if (pend !== null && state() === pend) { hist.pop(); fut = []; }
