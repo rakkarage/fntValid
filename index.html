@@ -7,49 +7,59 @@
 	<title>fntValid</title>
 	<style>
 		:root {
-			--bg: #faf8f4;
+			--bg: #eceff3;
 			--card: #fff;
-			--ink: #222;
-			--mut: #666;
-			--line: #ddd;
-			--acc: #7a3ff0;
-			--g: #1a9a4a;
+			--ink: #1b2330;
+			--mut: #6a7585;
+			--line: #d8dde5;
+			--acc: #5b4bdb;
+			--g: #12a150;
 			--b: #2b6fe0;
 			--o: #e07a10;
-			--r: #d03030;
-			--p: #7a3ff0;
+			--r: #d93a3a;
+			--p: #8a3ff0;
+			--okbg: #e6f6ec;
+			--badbg: #fdeaea;
 			box-sizing: border-box;
 			padding: env(safe-area-inset-top, 0) 0 env(safe-area-inset-bottom, 0)
 		}
 
 		@media(prefers-color-scheme:dark) {
 			:root:not([data-theme="light"]) {
-				--bg: #17161a;
-				--card: #222126;
-				--ink: #eee;
-				--mut: #aaa;
-				--line: #38363d;
-				--acc: #a98aff;
-				--g: #4ed17f;
+				--bg: #12141a;
+				--card: #1b1e26;
+				--ink: #e8ecf2;
+				--mut: #98a2b3;
+				--line: #2d323d;
+				--acc: #9d90ff;
+				--g: #3ddc84;
 				--b: #6ea2ff;
 				--o: #ffa04a;
 				--r: #ff6b6b;
-				--p: #a98aff
+				--p: #b88aff;
+				--okbg: #14301f;
+				--badbg: #3a1a1d
 			}
 		}
 
 		:root[data-theme="dark"] {
-			--bg: #17161a;
-			--card: #222126;
-			--ink: #eee;
-			--mut: #aaa;
-			--line: #38363d;
-			--acc: #a98aff;
-			--g: #4ed17f;
+			--bg: #12141a;
+			--card: #1b1e26;
+			--ink: #e8ecf2;
+			--mut: #98a2b3;
+			--line: #2d323d;
+			--acc: #9d90ff;
+			--g: #3ddc84;
 			--b: #6ea2ff;
 			--o: #ffa04a;
 			--r: #ff6b6b;
-			--p: #a98aff
+			--p: #b88aff;
+			--okbg: #14301f;
+			--badbg: #3a1a1d
+		}
+
+		* {
+			box-sizing: border-box
 		}
 
 		body {
@@ -59,41 +69,83 @@
 			font: 14px/1.45 system-ui, sans-serif
 		}
 
+		header {
+			display: flex;
+			align-items: center;
+			gap: 10px;
+			flex-wrap: wrap;
+			padding: 12px 12px 0;
+			max-width: 1400px;
+			margin: 0 auto
+		}
+
+		h1 {
+			font-size: 1.15rem;
+			margin: 0;
+			font-weight: 700;
+			letter-spacing: -.01em;
+			flex: 1
+		}
+
+		h1 span {
+			color: var(--mut);
+			font-weight: 400;
+			font-size: .8em;
+			margin-left: 8px
+		}
+
+		.pill {
+			padding: 3px 12px;
+			border-radius: 99px;
+			font-weight: 700;
+			font-size: .85em;
+			color: #fff;
+			background: var(--r)
+		}
+
+		.pill.ok {
+			background: var(--g);
+			color: #06210f
+		}
+
 		main {
-			max-width: 100%;
+			max-width: 1400px;
 			margin: 0 auto;
 			padding: 12px;
-			columns: 420px;
-			column-gap: 10px
+			columns: 440px;
+			column-gap: 12px
 		}
 
 		.card {
 			background: var(--card);
 			border: 1px solid var(--line);
-			border-radius: 8px;
-			padding: 10px;
-			margin: 0 0 10px;
-			break-inside: avoid
+			border-radius: 12px;
+			padding: 12px;
+			margin: 0 0 12px;
+			break-inside: avoid;
+			box-shadow: 0 1px 2px rgba(20, 30, 50, .06)
 		}
 
-		.row {
+		.cardname {
+			font-size: .8em;
+			font-weight: 700;
+			color: var(--mut);
+			margin: 0 0 8px;
 			display: flex;
-			gap: 10px;
-			flex-wrap: wrap
+			align-items: center;
+			gap: 8px
 		}
 
-		.row>* {
-			flex: 1 1 220px;
-			min-width: 0
+		.cardname .sp {
+			flex: 1
 		}
 
 		canvas {
 			display: block;
-			box-sizing: border-box;
 			image-rendering: pixelated;
 			max-width: 100%;
 			border: 1px solid var(--line);
-			border-radius: 4px;
+			border-radius: 8px;
 			background: var(--bg)
 		}
 
@@ -103,13 +155,12 @@
 			line-height: 0
 		}
 
-		code,
-		.k {
+		code {
 			font-family: ui-monospace, monospace;
 			font-size: .9em;
 			background: var(--bg);
-			padding: 1px 4px;
-			border-radius: 4px
+			padding: 1px 5px;
+			border-radius: 5px
 		}
 
 		.dot {
@@ -117,7 +168,7 @@
 			width: 10px;
 			height: 10px;
 			border-radius: 50%;
-			margin-right: 4px;
+			margin-right: 5px;
 			vertical-align: middle
 		}
 
@@ -129,16 +180,16 @@
 			color: var(--ink);
 			background: var(--card);
 			border: 1px solid var(--line);
-			border-radius: 6px;
-			padding: 4px 8px
+			border-radius: 8px;
+			padding: 5px 9px
 		}
 
 		button {
 			cursor: pointer;
-			background: color-mix(in srgb, var(--acc) 12%, var(--card));
-			border-color: color-mix(in srgb, var(--acc) 45%, var(--line));
 			font-weight: 600;
-			box-shadow: 0 1px 0 rgba(0, 0, 0, .06)
+			background: color-mix(in srgb, var(--acc) 10%, var(--card));
+			border-color: color-mix(in srgb, var(--acc) 40%, var(--line));
+			transition: background .12s
 		}
 
 		button:hover {
@@ -150,59 +201,79 @@
 			transform: translateY(1px)
 		}
 
-		input[type=number] {
-			width: 56px
+		button:disabled {
+			opacity: .4;
+			cursor: default;
+			pointer-events: none
 		}
 
-		textarea {
-			width: 100%;
-			box-sizing: border-box;
-			font-family: ui-monospace, monospace;
-			font-size: .78rem
-		}
-
-		#grid {
-			display: flex;
-			flex-wrap: wrap;
-			gap: 4px;
-			max-height: 160px;
-			overflow: auto
-		}
-
-		#grid button {
-			flex: 1 0 2.2em;
-			min-width: 2.2em;
-			height: 2em;
-			padding: 0 .2em;
-			font-family: ui-monospace, monospace
-		}
-
-		#grid button.on {
+		button.pri {
 			background: var(--acc);
 			color: #fff;
 			border-color: var(--acc)
 		}
 
+		:root:not([data-theme="light"]) button.pri {
+			color: #11131a
+		}
+
+		:focus-visible {
+			outline: 2px solid var(--acc);
+			outline-offset: 1px
+		}
+
+		input[type=number] {
+			width: 62px
+		}
+
+		input:focus,
+		textarea:focus,
+		select:focus {
+			border-color: var(--acc)
+		}
+
+		textarea {
+			width: 100%;
+			font-family: ui-monospace, monospace;
+			font-size: .8rem
+		}
+
 		label {
 			display: inline-flex;
-			gap: 4px;
+			gap: 5px;
 			align-items: center;
-			margin: 2px 6px 2px 0
+			margin: 3px 8px 3px 0
 		}
 
 		.mut {
 			color: var(--mut)
 		}
 
-		.cardname {
-			font-size: .75em;
-			color: var(--mut);
-			margin: 0 0 6px;
-			letter-spacing: .02em
+		.warn {
+			color: var(--o);
+			font-weight: 600
 		}
 
-		.warn {
-			color: var(--o)
+		.good {
+			color: var(--g);
+			font-weight: 600
+		}
+
+		p {
+			margin: .35em 0
+		}
+
+		hr {
+			border: 0;
+			border-top: 1px solid var(--line);
+			margin: 10px 0
+		}
+
+		.btns {
+			display: flex;
+			gap: 6px;
+			flex-wrap: wrap;
+			margin: 6px 0
 		}
 
 		.preview-box {
@@ -216,9 +287,10 @@
 
 		.overlay {
 			position: absolute;
-			padding: 4px 6px;
-			border-radius: 6px;
-			background: color-mix(in srgb, var(--card) 50%, transparent);
+			padding: 5px 8px;
+			border-radius: 8px;
+			background: color-mix(in srgb, var(--card) 70%, transparent);
+			backdrop-filter: blur(4px);
 			font-size: .85em
 		}
 
@@ -237,22 +309,126 @@
 			left: 6px
 		}
 
-		p {
-			margin: .35em 0
+		#grid {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 4px;
+			max-height: 170px;
+			overflow: auto;
+			padding: 2px
 		}
 
-		hr {
-			border: 0;
-			border-top: 1px solid var(--line);
-			margin: 8px 0
+		#grid button {
+			flex: 1 0 2.3em;
+			min-width: 2.3em;
+			height: 2.1em;
+			padding: 0;
+			font-family: ui-monospace, monospace;
+			position: relative;
+			background: var(--okbg);
+			border-color: color-mix(in srgb, var(--g) 40%, var(--line))
+		}
+
+		#grid button.bad {
+			background: var(--badbg);
+			border-color: color-mix(in srgb, var(--r) 55%, var(--line))
+		}
+
+		#grid button.on {
+			background: var(--acc);
+			color: #fff;
+			border-color: var(--acc);
+			box-shadow: 0 0 0 2px color-mix(in srgb, var(--acc) 35%, transparent)
+		}
+
+		:root:not([data-theme="light"]) #grid button.on {
+			color: #11131a
+		}
+
+		.chk {
+			border-radius: 10px;
+			padding: 7px 10px;
+			margin: 6px 0;
+			border: 1px solid;
+			border-left-width: 5px
+		}
+
+		.chk.ok {
+			background: var(--okbg);
+			border-color: color-mix(in srgb, var(--g) 40%, var(--line));
+			border-left-color: var(--g)
+		}
+
+		.chk.no {
+			background: var(--badbg);
+			border-color: color-mix(in srgb, var(--r) 40%, var(--line));
+			border-left-color: var(--r)
+		}
+
+		.chk p {
+			margin: 0;
+			display: flex;
+			gap: 8px;
+			align-items: baseline
+		}
+
+		.chk .ic {
+			font-weight: 800;
+			width: 1.1em
+		}
+
+		.ok .ic {
+			color: var(--g)
+		}
+
+		.no .ic {
+			color: var(--r)
+		}
+
+		.chk .t {
+			font-weight: 700
+		}
+
+		.chk .cnt {
+			margin-left: auto;
+			font-weight: 700
+		}
+
+		.chips {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 3px;
+			margin-top: 6px
+		}
+
+		.chips button {
+			flex: 0 0 auto;
+			min-width: 2em;
+			padding: 2px 6px;
+			background: var(--card);
+			border-color: var(--r);
+			color: var(--r)
+		}
+
+		.chips button.on {
+			background: var(--r);
+			color: #fff
 		}
 	</style>
 </head>
 
 <body>
+	<header>
+		<h1>fntValid<span id="fname"></span></h1>
+		<span class="pill" id="sum"></span>
+		<button id="undo" title="Ctrl/Cmd+Z">Undo</button>
+		<button id="redo" title="Ctrl/Cmd+Shift+Z">Redo</button>
+		<button id="theme">Theme</button>
+	</header>
 	<main>
 		<div class="card">
-			<p class="cardname">Character</p>
+			<p class="cardname">Character <span class="sp"></span><span class="mut">← → switch glyph · ↑ ↓ nudge</span>
+			</p>
 			<div class="preview-box">
 				<div class="sc"><canvas id="anat"></canvas></div>
 				<div class="overlay overlay-top" id="anaInfo"></div>
@@ -266,16 +442,26 @@
 			</div>
 		</div>
 
+		<div class="card" id="checkcard">
+			<p class="cardname">Checks</p>
+			<label>descenders <input id="dset" value="gjpqy" size="6"></label>
+			<label>top gap <input type="number" id="top" value="0"></label>
+			<label>bottom gap <input type="number" id="gap" value="0"></label>
+			<div class="btns"><button class="pri" id="fixb">Snap to baseline</button><button id="fixl">Fit
+					lineHeight</button><button id="norm">Normalize</button></div>
+			<div id="chk"></div>
+		</div>
+
 		<div class="card" id="settings">
 			<p class="cardname">Settings</p>
-			<p class="mut">Click atlas to select:</p>
+			<p class="mut">Click the atlas or a glyph to select. Red glyphs fail a check.</p>
 			<div class="sc"><canvas id="atlas"></canvas></div>
 			<div id="grid"></div>
 			<p id="selinfo" class="mut"></p>
 			<label>yoffset <input type="number" id="iyo"></label>
 			<label>xoffset <input type="number" id="ixo"></label>
 			<label>xadvance <input type="number" id="ixa"></label>
-			<button id="up">▲</button> <button id="dn">▼</button>
+			<span class="btns" style="display:inline-flex"><button id="up">▲</button><button id="dn">▼</button></span>
 			<hr>
 			<select id="grp">
 				<option value="all">all</option>
@@ -287,36 +473,41 @@
 				<option value="pun">punctuation</option>
 			</select>
 			<label>Δy <input type="number" id="dy" value="-1"></label><button id="apply">Apply</button>
-			<label>base <input type="number" id="ibase"></label><label>lineHeight <input type="number" id="ilh"></label>
-		</div>
-
-		<div class="card">
-			<p class="cardname">Checks <span id="sum" class="mut"></span></p>
-			<label>descenders <input id="dset" value="gjpqy" size="6"></label><br>
-			<button id="fixb">Snap to baseline</button> <button id="fixl">Fit lineHeight</button><br>
-			<label>top gap <input type="number" id="top" value="0"></label><label>bottom gap <input type="number"
-					id="gap" value="0"></label><button id="norm">Normalize</button>
-			<div id="chk"></div>
+			<br><label>base <input type="number" id="ibase"></label><label>lineHeight <input type="number"
+					id="ilh"></label>
 		</div>
 
 		<div class="card">
 			<p class="cardname">Font file</p>
 			<textarea id="fnt" rows="8" spellcheck="false" placeholder="Paste .fnt here"></textarea>
-			<p><button id="load">Load .fnt</button> <button id="exp">Export</button> <button id="cp">Copy</button>
+			<div class="btns"><button id="load">Load .fnt</button><button id="exp">Export</button><button
+					id="cp">Copy</button>
 				<label>PNG <input type="file" id="png" accept="image/png"></label>
-			</p>
+			</div>
 		</div>
 	</main>
 	<script>
 		const IMG = "Font/Venice16.png";
 		const D = "32,32,63,5,12,3,5;33,98,42,4,12,3,4;34,151,54,6,5,2,6;35,114,42,10,10,4,10;36,108,17,7,13,3,7;37,65,30,11,12,3,11;38,14,30,13,12,3,13;39,162,54,3,5,2,3;40,60,0,6,14,2,6;41,54,0,6,14,2,6;42,124,54,8,7,6,8;43,73,54,9,9,5,9;44,132,54,4,6,11,4;45,23,63,9,3,8,9;46,8,63,4,4,11,4;47,92,17,8,13,3,8;48,60,42,8,12,3,8;49,92,42,6,12,3,6;50,18,42,9,12,3,9;51,9,42,9,12,3,9;52,141,30,10,12,3,10;53,84,42,8,12,3,8;54,36,42,8,12,3,8;55,27,42,9,12,3,9;56,44,42,8,12,3,8;57,52,42,8,12,3,8;58,120,54,4,9,6,4;59,110,42,4,11,6,4;60,106,54,7,9,5,7;61,136,54,8,5,7,8;62,113,54,7,9,5,7;63,68,42,8,12,3,8;64,0,67,13,12,3,13;65,81,0,15,13,2,15;66,0,17,11,13,2,11;67,161,30,9,12,3,9;68,136,0,12,13,2,12;69,148,0,12,13,2,12;70,11,17,11,13,2,11;71,53,30,12,12,3,12;72,110,0,14,13,2,14;73,151,30,10,12,3,10;74,19,0,7,16,3,7;75,0,30,14,12,3,14;76,120,30,11,12,3,11;77,122,17,16,12,3,16;78,40,30,13,12,3,13;79,131,30,10,12,3,10;80,109,30,11,12,3,11;81,32,0,10,14,3,10;82,96,0,14,13,2,14;83,0,42,9,12,3,9;84,87,30,11,12,3,11;85,27,30,13,12,3,13;86,76,30,11,12,3,11;87,153,17,14,12,3,14;88,138,17,15,12,3,15;89,8,0,11,16,3,11;90,98,30,11,12,3,11;91,66,0,6,14,2,6;92,100,17,8,13,3,8;93,72,0,6,14,2,6;94,144,54,7,5,2,7;95,12,63,11,3,8,11;96,157,54,5,5,2,5;97,24,54,11,9,6,11;98,74,17,9,13,2,9;99,82,54,8,9,6,8;100,124,0,12,13,2,12;101,55,54,9,9,6,9;102,0,0,8,17,2,8;103,83,17,9,13,6,9;104,22,17,11,13,2,11;105,76,42,8,12,3,8;106,26,0,6,16,3,6;107,33,17,11,13,2,11;108,115,17,7,13,2,7;109,124,42,17,9,6,17;110,0,54,12,9,6,12;111,64,54,9,9,6,9;112,54,17,10,13,6,10;113,64,17,10,13,6,10;114,98,54,8,9,6,8;115,90,54,8,9,6,8;116,102,42,8,11,4,8;117,12,54,12,9,6,12;118,35,54,10,9,6,10;119,141,42,15,9,6,15;120,156,42,12,9,6,12;121,44,17,10,13,6,10;122,45,54,10,9,6,10;123,42,0,6,14,2,6;124,78,0,3,14,2,3;125,48,0,6,14,2,6;126,0,63,8,4,6,8";
-		let C = {}, hdr = { face: "Venice16", size: 16, sw: 171, sh: 79, page: "Venice16.png" }, lh = 16, base = 13, sel = 65, img = new Image;
+		let C = {}, hdr = { face: "Venice16", size: 16, sw: 171, sh: 79, page: "Venice16.png" }, lh = 16, base = 13, sel = 65, img = new Image, bad = new Set, hist = [], fut = [], lastKey = null, lastT = 0, pend = null;
 		const $ = i => document.getElementById(i), css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 		D.split(";").forEach(r => { const [a, x, y, w, h, yo, xa] = r.split(",").map(Number); C[a] = { x, y, w, h, xo: 0, yo, xa } });
 		const L = c => String.fromCharCode(c);
-		function grid() { $("grid").innerHTML = ""; Object.keys(C).forEach(k => { const b = document.createElement("button"); b.textContent = k == 32 ? "␣" : L(+k); b.className = k == sel ? "on" : ""; b.onclick = () => { sel = +k; draw() }; $("grid").appendChild(b) }) }
+		const glyphName = k => k == 32 ? "␣" : L(+k);
+		const state = () => JSON.stringify({ C, base, lh });
+		function snap(key) {
+			const now = Date.now(), st = state(); pend = null;
+			if (key && key === lastKey && now - lastT < 800) { lastT = now; fut = []; return }
+			lastKey = key || null; lastT = now;
+			if (hist[hist.length - 1] === st) return;
+			hist.push(st); fut = []; pend = st; if (hist.length > 60) hist.shift()
+		}
+		function drop() { if (pend !== null) { hist.pop(); pend = null } }
+		function restore(st) { const o = JSON.parse(st); C = o.C; base = o.base; lh = o.lh; lastKey = null; pend = null; if (!C[sel]) sel = +Object.keys(C)[0]; draw() }
+		function undo() { const st = hist.pop(); if (!st) return; fut.push(state()); restore(st) }
+		function redo() { const st = fut.pop(); if (!st) return; hist.push(state()); restore(st) }
+		function grid() { $("grid").innerHTML = ""; Object.keys(C).forEach(k => { const b = document.createElement("button"); b.textContent = glyphName(k); b.className = (bad.has(k) ? "bad " : "") + (k == sel ? "on" : ""); b.title = "id " + k; b.onclick = () => { sel = +k; draw() }; $("grid").appendChild(b) }) }
 		function ctxOf(c, w, h) { c.width = w; c.height = h; const x = c.getContext("2d"); x.imageSmoothingEnabled = false; return x }
-		function lbl(x, t, px, py, col) { x.fillStyle = col; x.font = "12px system-ui"; x.fillText(t, px, py) }
 		function anat() {
 			const c = C[sel], Z = 28, W = 24 * Z, H = (lh + 3) * Z, x = ctxOf($("anat"), W, H), ox = 4 * Z, oy = Z;
 			x.fillStyle = css("--card"); x.fillRect(0, 0, W, H);
@@ -333,30 +524,20 @@
 				const parts = []; g.items.forEach((it, i) => { if (i) parts.push({ t: ", ", col: it.col }); parts.push({ t: it.n, col: it.col }) }); parts.push({ t: " " + g.v, col: lcol });
 				hl(g.y, lcol, parts);
 			});
-			x.strokeStyle = css("--acc"); x.lineWidth = 1; x.beginPath(); x.moveTo(ox + c.xa * Z, oy); x.lineTo(ox + c.xa * Z, oy + lh * Z); x.stroke();
+			x.strokeStyle = css("--p"); x.lineWidth = 2; x.beginPath(); x.moveTo(ox + c.xa * Z, oy); x.lineTo(ox + c.xa * Z, oy + lh * Z); x.stroke();
 			$("vb").textContent = base; $("vl").textContent = lh; $("xa").textContent = c.xa;
 			const d = bottom - base;
 			const btxt = d == 0 ? "on base" : (d > 0 ? d + "px below base" : (-d) + "px above base");
-			$("anaInfo").innerHTML = `<b>“${L(sel)}”</b><br><span class="${d ? "warn" : "mut"}">baseline: ${btxt}</span><br>top-left = (xoffset, yoffset) = (${c.xo}, ${c.yo})<br>bottom = yoffset + height = ${c.yo} + ${c.h} = ${bottom}<br>xadvance = ${c.xa}`;
-		}
-		function prev() {
-			const t = $("txt"), g = $("gd"), p = $("prev");
-			if (!t || !g || !p) return;
-			const Z = 4, lines = t.value.split("\n"), W = Math.max(260, Math.min(980, lines.reduce((m, s) => Math.max(m, [...s].reduce((a, ch) => a + ((C[ch.charCodeAt(0)] || {}).xa || 0), 0)), 0) + 8)) * Z, x = ctxOf(p, W, (lines.length * lh + 4) * Z);
-			x.fillStyle = css("--card"); x.fillRect(0, 0, W, x.canvas.height);
-			lines.forEach((s, i) => {
-				const y0 = (2 + i * lh) * Z; let px = 4 * Z;
-				if (g.checked) { [[0, "--r"], [base, "--g"], [lh, "--b"]].forEach(([o, v]) => { x.fillStyle = css(v); x.globalAlpha = .7; x.fillRect(0, y0 + o * Z, W, 1); x.globalAlpha = 1 }) }
-				for (const ch of s) { const c = C[ch.charCodeAt(0)]; if (!c) continue; x.drawImage(img, c.x, c.y, c.w, c.h, px + c.xo * Z, y0 + c.yo * Z, c.w * Z, c.h * Z); px += c.xa * Z }
-			})
+			$("anaInfo").innerHTML = `<b>“${L(sel)}”</b> <span class="mut">id ${sel}</span><br><span class="${d ? "warn" : "good"}">baseline: ${btxt}</span><br>(xoffset, yoffset) = (${c.xo}, ${c.yo})<br>bottom = ${c.yo} + ${c.h} = ${bottom}<br>xadvance = ${c.xa}`;
 		}
 		function atl() {
 			const Z = 4, x = ctxOf($("atlas"), hdr.sw * Z, hdr.sh * Z); x.fillStyle = css("--card"); x.fillRect(0, 0, x.canvas.width, x.canvas.height); x.drawImage(img, 0, 0, hdr.sw * Z, hdr.sh * Z);
+			x.fillStyle = "rgba(217,58,58,.28)"; bad.forEach(k => { const c = C[k]; if (c) x.fillRect(c.x * Z, c.y * Z, c.w * Z, c.h * Z) });
 			const c = C[sel]; x.strokeStyle = css("--acc"); x.lineWidth = 2; x.strokeRect(c.x * Z, c.y * Z, c.w * Z, c.h * Z)
 		}
 		function sync() {
 			const c = C[sel]; $("iyo").value = c.yo; $("ixo").value = c.xo; $("ixa").value = c.xa; $("ibase").value = base; $("ilh").value = lh;
-			$("selinfo").textContent = `id ${sel} “${L(sel)}” ${c.w}×${c.h} @ ${c.x},${c.y}`
+			$("selinfo").textContent = `id ${sel} “${L(sel)}” ${c.w}×${c.h} @ ${c.x},${c.y}`; $("fname").textContent = `${hdr.face} · ${hdr.size}px`
 		}
 		function checks() {
 			const ds = $("dset").value, isD = s => ds.includes(s), al = s => /[A-Za-z0-9]/.test(s), bt = c => c.yo + c.h;
@@ -366,39 +547,33 @@
 			["Past lineHeight", c => bt(c) > lh, "overflows line box"],
 			["Outside atlas", c => c.x < 0 || c.y < 0 || c.x + c.w > hdr.sw || c.y + c.h > hdr.sh, "leaves PNG"],
 			["Advance too small", c => c.xa < c.xo + c.w, "wider than advance"]];
-			const out = $("chk"), all = new Set; out.innerHTML = "";
-			R.forEach(([t, f, h]) => {
-				const bad = Object.keys(C).filter(k => f(C[k], L(+k))); bad.forEach(k => all.add(k)); const d = document.createElement("div");
-				d.innerHTML = `<p><b>${bad.length ? "✗" : "✓"} ${t}</b> <span class="mut">(${bad.length}) ${h}</span></p>`;
-				const w = document.createElement("div"); w.style.cssText = "display:flex;flex-wrap:wrap;gap:2px";
-				bad.forEach(k => { const b = document.createElement("button"); b.textContent = k == 32 ? "␣" : L(+k); b.style.cssText = "flex:1 0 2em;min-width:2em;padding:2px 0" + (k == sel ? ";background:var(--acc);color:#fff" : ""); b.onclick = () => { sel = +k; draw() }; w.appendChild(b) });
-				d.appendChild(w); out.appendChild(d)
-			});
+			const out = $("chk"); bad = new Set; out.innerHTML = ""; let fails = 0;
+			const row = (ok, t, h, cnt, keys) => {
+				if (!ok) fails++;
+				const d = document.createElement("div"); d.className = "chk " + (ok ? "ok" : "no");
+				d.innerHTML = `<p><span class="ic">${ok ? "✓" : "✗"}</span><span class="t">${t}</span><span class="mut">${h}</span>${cnt == null ? "" : `<span class="cnt" style="color:var(${ok ? "--g" : "--r"})">${cnt}</span>`}</p>`;
+				if (keys && keys.length) { const w = document.createElement("div"); w.className = "chips"; keys.forEach(k => { const b = document.createElement("button"); b.textContent = glyphName(k); b.className = k == sel ? "on" : ""; b.onclick = () => { sel = +k; draw() }; w.appendChild(b) }); d.appendChild(w) }
+				out.appendChild(d)
+			};
+			R.forEach(([t, f, h]) => { const b = Object.keys(C).filter(k => f(C[k], L(+k))); b.forEach(k => bad.add(k)); row(!b.length, t, h, b.length, b) });
 			const v = Object.values(C);
 			if (v.length) {
 				const minY = Math.min(...v.map(c => c.yo)), maxB = Math.max(...v.map(c => c.yo + c.h));
 				const top = +$("top").value, gap = +$("gap").value;
-				const topOk = minY === top, lhOk = lh === maxB + gap;
-				[["top gap = minY", topOk, `top ${top}, min yoffset ${minY}`],
-				["lineHeight = maxBottom + gap", lhOk, `lineHeight ${lh}, max bottom+gap ${maxB + gap}`]].forEach(([t, ok, h]) => {
-					const d = document.createElement("div");
-					d.innerHTML = `<p><b>${ok ? "✓" : "✗"} ${t}</b> <span class="mut">${h}</span></p>`;
-					out.appendChild(d)
-				})
+				row(minY === top, "Top gap = minY", `top ${top}, min yoffset ${minY}`);
+				row(lh === maxB + gap, "lineHeight = maxBottom + gap", `lineHeight ${lh}, max bottom+gap ${maxB + gap}`);
 			}
-			$("sum").textContent = `${all.size}/${Object.keys(C).length} flagged`
+			const s = $("sum"); s.textContent = bad.size ? `${bad.size}/${Object.keys(C).length} glyphs flagged` : (fails ? "line box needs a fix" : "All checks pass"); s.className = "pill" + (fails ? "" : " ok")
 		}
 		function modeOf(a) { const m = {}; a.forEach(v => m[v] = (m[v] || 0) + 1); const t = Object.entries(m).sort((a, b) => b[1] - a[1])[0]; return t ? +t[0] : null }
 		function autoFix() {
+			snap();
 			const ds = $("dset").value, top = +$("top").value, gap = +$("gap").value;
 			const keys = Object.keys(C);
 			const flat = k => { const s = L(+k); return /[A-Za-z0-9]/.test(s) && !ds.includes(s) };
-			// 1. base = most common bottom among flat glyphs (read BEFORE moving anything)
 			const b0 = modeOf(keys.filter(flat).map(k => C[k].yo + C[k].h));
-			if (b0 == null) return;
-			// 2. snap flat glyphs to b0
+			if (b0 == null) { drop(); return }
 			keys.filter(flat).forEach(k => { C[k].yo = b0 - C[k].h });
-			// descenders: align tops to x-height top; 'j' dot aligns with 'i'
 			const xTop = modeOf(keys.filter(k => flat(k) && /[a-z]/.test(L(+k))).map(k => C[k].yo));
 			if (xTop != null) {
 				keys.forEach(k => {
@@ -408,31 +583,40 @@
 					else C[k].yo = xTop;
 				});
 			}
-			// 3. shift everything so min yo = top; base moves with it
 			const dy = top - Math.min(...keys.map(k => C[k].yo));
 			keys.forEach(k => { C[k].yo += dy }); base = b0 + dy;
-			// 4. fit line box
 			lh = Math.max(...keys.map(k => C[k].yo + C[k].h)) + gap;
 			draw();
 		}
-		$("fixb").onclick = autoFix;
-		$("fixl").onclick = autoFix;
-		$("norm").onclick = autoFix;
-		$("dset").oninput = checks;
-		function draw() { grid(); sync(); anat(); prev(); atl(); checks() }
-		$("iyo").oninput = e => { C[sel].yo = +e.target.value; draw() }; $("ixo").oninput = e => { C[sel].xo = +e.target.value; draw() }; $("ixa").oninput = e => { C[sel].xa = +e.target.value; draw() };
-		$("ibase").oninput = e => { base = +e.target.value; draw() }; $("ilh").oninput = e => { lh = +e.target.value; draw() };
-		$("up").onclick = () => { C[sel].yo--; draw() }; $("dn").onclick = () => { C[sel].yo++; draw() };
+		$("fixb").onclick = autoFix; $("fixl").onclick = autoFix; $("norm").onclick = autoFix;
+		$("dset").oninput = draw; $("top").oninput = checks; $("gap").oninput = checks;
+		function draw() {
+			if (pend !== null && state() === pend) { hist.pop(); fut = []; }
+			pend = null;
+			$("undo").disabled = !hist.length; $("redo").disabled = !fut.length;
+			checks(); grid(); sync(); anat(); atl()
+		}
+		const edit = (fn, k) => e => { snap(typeof k == "function" ? k() : k); fn(e); draw() };
+		$("iyo").oninput = edit(e => C[sel].yo = +e.target.value, () => "yo" + sel); $("ixo").oninput = edit(e => C[sel].xo = +e.target.value, () => "xo" + sel); $("ixa").oninput = edit(e => C[sel].xa = +e.target.value, () => "xa" + sel);
+		$("ibase").oninput = edit(e => base = +e.target.value, "base"); $("ilh").oninput = edit(e => lh = +e.target.value, "lh");
+		$("up").onclick = edit(() => C[sel].yo--); $("dn").onclick = edit(() => C[sel].yo++);
+		$("undo").onclick = undo; $("redo").onclick = redo;
+		$("theme").onclick = () => { const r = document.documentElement, dark = r.dataset.theme ? r.dataset.theme === "dark" : matchMedia("(prefers-color-scheme:dark)").matches; r.dataset.theme = dark ? "light" : "dark"; draw() };
 		const G = { all: () => 1, up: s => /[A-Z]/.test(s), low: s => /[a-z]/.test(s), desc: s => /[gjpqy]/.test(s), nodesc: s => /[a-z]/.test(s) && !/[gjpqy]/.test(s), dig: s => /[0-9]/.test(s), pun: s => /[^A-Za-z0-9 ]/.test(s) };
-		$("apply").onclick = () => { const f = G[$("grp").value], d = +$("dy").value; Object.keys(C).forEach(k => { if (f(L(+k))) C[k].yo += d }); draw() };
-		["txt", "gd"].forEach(i => { const el = $(i); if (el) el.oninput = prev });
+		$("apply").onclick = () => { snap(); const f = G[$("grp").value], d = +$("dy").value; Object.keys(C).forEach(k => { if (f(L(+k))) C[k].yo += d }); draw() };
 		$("atlas").onclick = e => {
 			const r = e.target.getBoundingClientRect(), px = (e.clientX - r.left) / r.width * hdr.sw, py = (e.clientY - r.top) / r.height * hdr.sh;
 			const k = Object.keys(C).find(k => { const c = C[k]; return px >= c.x && px < c.x + c.w && py >= c.y && py < c.y + c.h }); if (k) { sel = +k; draw() }
 		};
 		addEventListener("keydown", e => {
+			if ((e.ctrlKey || e.metaKey) && !/TEXTAREA/.test(e.target.tagName)) {
+				const k = e.key.toLowerCase();
+				if (k === "z") { e.preventDefault(); e.shiftKey ? redo() : undo(); return }
+				if (k === "y") { e.preventDefault(); redo(); return }
+			}
 			if (/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return; const ks = Object.keys(C).map(Number), i = ks.indexOf(sel);
-			if (e.key == "ArrowRight") sel = ks[Math.min(ks.length - 1, i + 1)]; else if (e.key == "ArrowLeft") sel = ks[Math.max(0, i - 1)]; else return; draw()
+			if (e.key == "ArrowRight") sel = ks[Math.min(ks.length - 1, i + 1)]; else if (e.key == "ArrowLeft") sel = ks[Math.max(0, i - 1)];
+			else if (e.key == "ArrowUp") { snap("nudge" + sel); C[sel].yo-- } else if (e.key == "ArrowDown") { snap("nudge" + sel); C[sel].yo++ } else return; e.preventDefault(); draw()
 		});
 		function out() {
 			let s = `info face="${hdr.face}" size=${hdr.size}\ncommon lineHeight=${lh} base=${base} scaleW=${hdr.sw} scaleH=${hdr.sh} pages=1\npage id=0 file="${hdr.page}"\nchars count=${Object.keys(C).length}\n`;
@@ -447,7 +631,7 @@
 				else if (/^info /.test(l)) { hdr.face = g(l, "face") || hdr.face; hdr.size = +g(l, "size") || hdr.size }
 				else if (/^page /.test(l)) { hdr.page = g(l, "file") || hdr.page }
 			});
-			if (Object.keys(n).length) { C = n; sel = +Object.keys(C)[0]; draw() }
+			if (Object.keys(n).length) { snap(); C = n; sel = +Object.keys(C)[0]; draw() }
 		};
 		$("png").onchange = e => { const f = e.target.files[0]; if (!f) return; hdr.page = f.name; img.onload = () => { hdr.sw = img.width; hdr.sh = img.height; draw() }; img.src = URL.createObjectURL(f) };
 		img.onload = draw; img.src = IMG; draw();
