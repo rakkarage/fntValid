@@ -563,8 +563,8 @@
 			if (v.length) {
 				const minY = Math.min(...v.map(c => c.yo)), maxB = Math.max(...v.map(c => c.yo + c.h));
 				const top = +$("top").value, gap = +$("gap").value;
-				row(minY === top, "Top gap = minY", `top ${top}, min yoffset ${minY}`);
-				row(lh === maxB + gap, "lineHeight = maxBottom + gap", `lineHeight ${lh}, max bottom+gap ${maxB + gap}`);
+				row(minY === top, "Top gap = minY", `top ${top}, min yoffset ${minY}`, minY === top ? 0 : 1);
+				row(lh === maxB + gap, "lineHeight = maxBottom + gap", `lineHeight ${lh}, max bottom+gap ${maxB + gap}`, lh === maxB + gap ? 0 : 1);
 			}
 			const s = $("sum"); s.textContent = bad.size ? `${bad.size}/${Object.keys(C).length} glyphs flagged` : (fails ? "line box needs a fix" : "All checks pass"); s.className = "pill" + (fails ? "" : " ok")
 		}
