@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+	<title>.fnt explainer & y-offset editor</title>
+	<style>
+		:root {
+			--bg: #faf8f4;
+			--card: #fff;
+			--ink: #222;
+			--mut: #666;
+			--line: #ddd;
+			--acc: #7a3ff0;
+			--g: #1a9a4a;
+			--b: #2b6fe0;
+			--o: #e07a10;
+			--r: #d03030;
+			box-sizing: border-box;
+			padding-top: env(safe-area-inset-top, 0px);
+			padding-bottom: env(safe-area-inset-bottom, 0px)
+		}
+
+		@media (prefers-color-scheme:dark) {
+			:root:not([data-theme="light"]) {
+				--bg: #17161a;
+				--card: #222126;
+				--ink: #eee;
+				--mut: #aaa;
+				--line: #38363d;
+				--acc: #a98aff;
+				--g: #4ed17f;
+				--b: #6ea2ff;
+				--o: #ffa04a;
+				--r: #ff6b6b
+			}
+		}
+
+		:root[data-theme="dark"] {
+			--bg: #17161a;
+			--card: #222126;
+			--ink: #eee;
+			--mut: #aaa;
+			--line: #38363d;
+			--acc: #a98aff;
+			--g: #4ed17f;
+			--b: #6ea2ff;
+			--o: #ffa04a;
+			--r: #ff6b6b
+		}
+
+		html {
+			scroll-padding-top: env(safe-area-inset-top, 0px)
+		}
+
+		body {
+			margin: 0;
+			background: var(--bg);
+			color: var(--ink);
+			font: 15px/1.55 system-ui, sans-serif
+		}
+
+		main {
+			max-width: 980px;
+			margin: 0 auto;
+			padding: 16px
+		}
+
+		h1 {
+			font-size: 1.5rem;
+			margin: .2em 0
+		}
+
+		h2 {
+			font-size: 1.15rem;
+			margin: 1.4em 0 .4em
+		}
+
+		.card {
+			background: var(--card);
+			border: 1px solid var(--line);
+			border-radius: 10px;
+			padding: 14px;
+			margin: 10px 0
+		}
+
+		.row {
+			display: flex;
+			gap: 14px;
+			flex-wrap: wrap
+		}
+
+		.row>* {
+			flex: 1 1 280px;
+			min-width: 0
+		}
+
+		canvas {
+			image-rendering: pixelated;
+			max-width: 100%;
+			border: 1px solid var(--line);
+			border-radius: 6px;
+			background: var(--bg)
+		}
+
+		.sc {
+			overflow-x: auto
+		}
+
+		code,
+		.k {
+			font-family: ui-monospace, monospace;
+			font-size: .9em;
+			background: var(--bg);
+			padding: 1px 5px;
+			border-radius: 4px
+		}
+
+		.dot {
+			display: inline-block;
+			width: 10px;
+			height: 10px;
+			border-radius: 50%;
+			margin-right: 4px
+		}
+
+		button,
+		input,
+		select,
+		textarea {
+			font: inherit;
+			color: var(--ink);
+			background: var(--card);
+			border: 1px solid var(--line);
+			border-radius: 6px;
+			padding: 4px 8px
+		}
+
+		button {
+			cursor: pointer
+		}
+
+		button:hover {
+			border-color: var(--acc)
+		}
+
+		input[type=number] {
+			width: 64px
+		}
+
+		textarea {
+			width: 100%;
+			box-sizing: border-box;
+			font-family: ui-monospace, monospace;
+			font-size: .8rem
+		}
+
+		#grid {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 3px;
+			max-height: 150px;
+			overflow: auto
+		}
+
+		#grid button {
+			width: 30px;
+			height: 28px;
+			padding: 0;
+			font-family: ui-monospace, monospace
+		}
+
+		#grid button.on {
+			background: var(--acc);
+			color: #fff;
+			border-color: var(--acc)
+		}
+
+		label {
+			display: inline-flex;
+			gap: 5px;
+			align-items: center;
+			margin: 3px 8px 3px 0
+		}
+
+		.mut {
+			color: var(--mut)
+		}
+
+		.warn {
+			color: var(--o)
+		}
+	</style>
+</head>
+
+<body>
+	<main>
+		<h1>.fnt explainer &amp; y-offset editor</h1>
+		<p class="mut">For BMFont text <code>.fnt</code> files. Loaded with your Venice16 font; paste or load your own
+			at the bottom.</p>
+
+		<h2>1 · How a character sits in its line</h2>
+		<div class="card">
+			<p>Every line of text is a box <code>lineHeight</code> pixels tall. The pen starts at the top-left of that
+				box. Each glyph is a rectangle cut from the atlas PNG (<code>x y width height</code>) and drawn at
+				<b>pen + (xoffset, yoffset)</b>. After drawing, the pen moves right by <code>xadvance</code>.</p>
+			<div class="row">
+				<div class="sc"><canvas id="anat"></canvas></div>
+				<div>
+					<p><span class="dot" style="background:var(--r)"></span><b>Top</b> of line: y = 0.</p>
+					<p><span class="dot" style="background:var(--g)"></span><b>base</b>: distance from top of line to
+						the baseline (where letters like “A” should stand). Here <code id="vb"></code>.</p>
+					<p><span class="dot" style="background:var(--b)"></span><b>lineHeight</b>: distance from one line’s
+						top to the next. Here <code id="vl"></code>.</p>
+					<p><span class="dot" style="background:var(--o)"></span><b>Glyph bottom</b> =
+						<code>yoffset + height</code>. For a letter that sits on the baseline this should equal
+						<code>base</code>; descenders (g, j, p, q, y) go below it.</p>
+					<p id="anaInfo"></p>
+					<p class="mut">Pick a character in the editor below (or click here and use ← →).</p>
+				</div>
+			</div>
+		</div>
+
+		<h2>2 · Editor</h2>
+		<div class="card">
+			<div id="grid"></div>
+			<p id="selinfo" class="mut"></p>
+			<label>yoffset <input type="number" id="iyo"></label>
+			<label>xoffset <input type="number" id="ixo"></label>
+			<label>xadvance <input type="number" id="ixa"></label>
+			<button id="up">▲ up</button> <button id="dn">▼ down</button>
+			<hr style="border:0;border-top:1px solid var(--line)">
+			<b>Shift many at once</b> (trade a fix in one place for the rest):<br>
+			<select id="grp">
+				<option value="all">all glyphs</option>
+				<option value="up">A–Z</option>
+				<option value="low">a–z</option>
+				<option value="desc">descenders g j p q y</option>
+				<option value="nodesc">a–z without descenders</option>
+				<option value="dig">0–9</option>
+				<option value="pun">punctuation</option>
+			</select>
+			<label>Δy <input type="number" id="dy" value="-1"></label><button id="apply">Apply</button>
+			<label>base <input type="number" id="ibase"></label><label>lineHeight <input type="number" id="ilh"></label>
+			<p id="rep"></p>
+		</div>
+		<div class="card">
+			<label>Preview text <input id="txt" size="34" value="Hag Jyp 0123 Quick fox, jumps!"></label>
+			<label>zoom <select id="zm">
+					<option>2</option>
+					<option selected>4</option>
+					<option>6</option>
+				</select></label>
+			<label><input type="checkbox" id="gd" checked> guides</label>
+			<div class="sc"><canvas id="prev"></canvas></div>
+			<p class="mut">Click the atlas to select a glyph:</p>
+			<div class="sc"><canvas id="atlas"></canvas></div>
+		</div>
+
+		<h2>3 · Import / export</h2>
+		<div class="card">
+			<textarea id="fnt" rows="8" spellcheck="false" placeholder="Paste .fnt text here"></textarea>
+			<p><button id="load">Load pasted .fnt</button> <button id="exp">Export edited .fnt ↓ box</button> <button
+					id="cp">Copy</button>
+				<label>Atlas PNG <input type="file" id="png" accept="image/png"></label>
+			</p>
+		</div>
+	</main>
+	<script>
+		const IMG = "data:image/png;base64,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";
+		const D = "32,32,63,5,12,3,5;33,98,42,4,12,3,4;34,151,54,6,5,2,6;35,114,42,10,10,4,10;36,108,17,7,13,3,7;37,65,30,11,12,3,11;38,14,30,13,12,3,13;39,162,54,3,5,2,3;40,60,0,6,14,2,6;41,54,0,6,14,2,6;42,124,54,8,7,6,8;43,73,54,9,9,5,9;44,132,54,4,6,11,4;45,23,63,9,3,8,9;46,8,63,4,4,11,4;47,92,17,8,13,3,8;48,60,42,8,12,3,8;49,92,42,6,12,3,6;50,18,42,9,12,3,9;51,9,42,9,12,3,9;52,141,30,10,12,3,10;53,84,42,8,12,3,8;54,36,42,8,12,3,8;55,27,42,9,12,3,9;56,44,42,8,12,3,8;57,52,42,8,12,3,8;58,120,54,4,9,6,4;59,110,42,4,11,6,4;60,106,54,7,9,5,7;61,136,54,8,5,7,8;62,113,54,7,9,5,7;63,68,42,8,12,3,8;64,0,67,13,12,3,13;65,81,0,15,13,2,15;66,0,17,11,13,2,11;67,161,30,9,12,3,9;68,136,0,12,13,2,12;69,148,0,12,13,2,12;70,11,17,11,13,2,11;71,53,30,12,12,3,12;72,110,0,14,13,2,14;73,151,30,10,12,3,10;74,19,0,7,16,3,7;75,0,30,14,12,3,14;76,120,30,11,12,3,11;77,122,17,16,12,3,16;78,40,30,13,12,3,13;79,131,30,10,12,3,10;80,109,30,11,12,3,11;81,32,0,10,14,3,10;82,96,0,14,13,2,14;83,0,42,9,12,3,9;84,87,30,11,12,3,11;85,27,30,13,12,3,13;86,76,30,11,12,3,11;87,153,17,14,12,3,14;88,138,17,15,12,3,15;89,8,0,11,16,3,11;90,98,30,11,12,3,11;91,66,0,6,14,2,6;92,100,17,8,13,3,8;93,72,0,6,14,2,6;94,144,54,7,5,2,7;95,12,63,11,3,8,11;96,157,54,5,5,2,5;97,24,54,11,9,6,11;98,74,17,9,13,2,9;99,82,54,8,9,6,8;100,124,0,12,13,2,12;101,55,54,9,9,6,9;102,0,0,8,17,2,8;103,83,17,9,13,6,9;104,22,17,11,13,2,11;105,76,42,8,12,3,8;106,26,0,6,16,3,6;107,33,17,11,13,2,11;108,115,17,7,13,2,7;109,124,42,17,9,6,17;110,0,54,12,9,6,12;111,64,54,9,9,6,9;112,54,17,10,13,6,10;113,64,17,10,13,6,10;114,98,54,8,9,6,8;115,90,54,8,9,6,8;116,102,42,8,11,4,8;117,12,54,12,9,6,12;118,35,54,10,9,6,10;119,141,42,15,9,6,15;120,156,42,12,9,6,12;121,44,17,10,13,6,10;122,45,54,10,9,6,10;123,42,0,6,14,2,6;124,78,0,3,14,2,3;125,48,0,6,14,2,6;126,0,63,8,4,6,8";
+		let C = {}, hdr = { face: "Venice16", size: 16, sw: 171, sh: 79, page: "Venice16.png" }, lh = 16, base = 13, sel = 65, img = new Image;
+		const $ = i => document.getElementById(i), css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+		D.split(";").forEach(r => { const [a, x, y, w, h, yo, xa] = r.split(",").map(Number); C[a] = { x, y, w, h, xo: 0, yo, xa } });
+		const L = c => String.fromCharCode(c);
+		function grid() { $("grid").innerHTML = ""; Object.keys(C).forEach(k => { const b = document.createElement("button"); b.textContent = k == 32 ? "␣" : L(+k); b.className = k == sel ? "on" : ""; b.onclick = () => { sel = +k; draw() }; $("grid").appendChild(b) }) }
+		function ctxOf(c, w, h) { c.width = w; c.height = h; const x = c.getContext("2d"); x.imageSmoothingEnabled = false; return x }
+		function lbl(x, t, px, py, col) { x.fillStyle = col; x.font = "12px system-ui"; x.fillText(t, px, py) }
+		function anat() {
+			const c = C[sel], Z = 14, W = 24 * Z, H = (lh + 3) * Z, x = ctxOf($("anat"), W, H), ox = 4 * Z, oy = Z;
+			x.fillStyle = css("--card"); x.fillRect(0, 0, W, H);
+			x.fillStyle = "rgba(120,120,200,.12)"; x.fillRect(ox, oy, c.xa * Z, lh * Z);
+			x.drawImage(img, c.x, c.y, c.w, c.h, ox + c.xo * Z, oy + c.yo * Z, c.w * Z, c.h * Z);
+			x.setLineDash([4, 3]); x.strokeStyle = css("--acc"); x.strokeRect(ox + c.xo * Z + .5, oy + c.yo * Z + .5, c.w * Z, c.h * Z); x.setLineDash([]);
+			const hl = (y, col, t) => { x.strokeStyle = col; x.lineWidth = 2; x.beginPath(); x.moveTo(Z, oy + y * Z); x.lineTo(W - Z, oy + y * Z); x.stroke(); lbl(x, t, W - Z * 8, oy + y * Z - 3, col) };
+			hl(0, css("--r"), "top (0)"); hl(base, css("--g"), "base " + base); hl(lh, css("--b"), "lineHeight " + lh); hl(c.yo + c.h, css("--o"), "bottom " + (c.yo + c.h));
+			x.strokeStyle = css("--acc"); x.lineWidth = 1; x.beginPath(); x.moveTo(ox + c.xa * Z, oy); x.lineTo(ox + c.xa * Z, oy + lh * Z); x.stroke();
+			lbl(x, "yoffset " + c.yo, 6, oy + c.yo * Z + 12, css("--ink"));
+			$("vb").textContent = base; $("vl").textContent = lh;
+			const d = c.yo + c.h - base; $("anaInfo").innerHTML = `“${L(sel)}”: bottom is ${d == 0 ? "<b>on</b>" : Math.abs(d) + " px " + (d > 0 ? "below" : "above")} the baseline. Pen advances <code>${c.xa}</code> px.`
+		}
+		function prev() {
+			const Z = +$("zm").value, lines = $("txt").value.split("\n"), W = Math.max(300, Math.min(980, lines.reduce((m, s) => Math.max(m, [...s].reduce((a, ch) => a + ((C[ch.charCodeAt(0)] || {}).xa || 0), 0)), 0) + 8)) * Z, x = ctxOf($("prev"), W, (lines.length * lh + 4) * Z);
+			x.fillStyle = css("--card"); x.fillRect(0, 0, W, x.canvas.height);
+			lines.forEach((s, i) => {
+				const y0 = (2 + i * lh) * Z; let px = 4 * Z;
+				if ($("gd").checked) { [[0, "--r"], [base, "--g"], [lh, "--b"]].forEach(([o, v]) => { x.fillStyle = css(v); x.globalAlpha = .7; x.fillRect(0, y0 + o * Z, W, 1); x.globalAlpha = 1 }) }
+				for (const ch of s) { const c = C[ch.charCodeAt(0)]; if (!c) continue; x.drawImage(img, c.x, c.y, c.w, c.h, px + c.xo * Z, y0 + c.yo * Z, c.w * Z, c.h * Z); px += c.xa * Z }
+			})
+		}
+		function atl() {
+			const Z = 4, x = ctxOf($("atlas"), hdr.sw * Z, hdr.sh * Z); x.fillStyle = css("--card"); x.fillRect(0, 0, x.canvas.width, x.canvas.height); x.drawImage(img, 0, 0, hdr.sw * Z, hdr.sh * Z);
+			const c = C[sel]; x.strokeStyle = css("--acc"); x.lineWidth = 2; x.strokeRect(c.x * Z, c.y * Z, c.w * Z, c.h * Z)
+		}
+		function rep() {
+			const m = {}; Object.keys(C).filter(k => /[A-Za-z0-9]/.test(L(+k)) && !/[gjpqy]/.test(L(+k))).forEach(k => { const b = C[k].yo + C[k].h; m[b] = (m[b] || 0) + 1 });
+			const top = Object.entries(m).sort((a, b) => b[1] - a[1])[0]; if (!top) return; const d = top[0] - base;
+			$("rep").innerHTML = `Most letters/digits (no descenders) bottom out at <b>${top[0]}</b> (${top[1]} glyphs) but base is <b>${base}</b>. ` + (d ? `<span class="warn">Gap of ${d}px — either set base to ${top[0]} or shift glyphs by ${-d}.</span>` : "✓ consistent.")
+		}
+		function sync() {
+			const c = C[sel]; $("iyo").value = c.yo; $("ixo").value = c.xo; $("ixa").value = c.xa; $("ibase").value = base; $("ilh").value = lh;
+			$("selinfo").innerHTML = `id ${sel} “${L(sel)}” · atlas <code>${c.x},${c.y}</code> · size <code>${c.w}×${c.h}</code>`
+		}
+		function draw() { grid(); sync(); anat(); prev(); atl(); rep() }
+		$("iyo").oninput = e => { C[sel].yo = +e.target.value; draw() }; $("ixo").oninput = e => { C[sel].xo = +e.target.value; draw() }; $("ixa").oninput = e => { C[sel].xa = +e.target.value; draw() };
+		$("ibase").oninput = e => { base = +e.target.value; draw() }; $("ilh").oninput = e => { lh = +e.target.value; draw() };
+		$("up").onclick = () => { C[sel].yo--; draw() }; $("dn").onclick = () => { C[sel].yo++; draw() };
+		const G = { all: () => 1, up: s => /[A-Z]/.test(s), low: s => /[a-z]/.test(s), desc: s => /[gjpqy]/.test(s), nodesc: s => /[a-z]/.test(s) && !/[gjpqy]/.test(s), dig: s => /[0-9]/.test(s), pun: s => /[^A-Za-z0-9 ]/.test(s) };
+		$("apply").onclick = () => { const f = G[$("grp").value], d = +$("dy").value; Object.keys(C).forEach(k => { if (f(L(+k))) C[k].yo += d }); draw() };
+		["txt", "zm", "gd"].forEach(i => $(i).oninput = prev);
+		$("atlas").onclick = e => {
+			const r = e.target.getBoundingClientRect(), px = (e.clientX - r.left) / r.width * hdr.sw, py = (e.clientY - r.top) / r.height * hdr.sh;
+			const k = Object.keys(C).find(k => { const c = C[k]; return px >= c.x && px < c.x + c.w && py >= c.y && py < c.y + c.h }); if (k) { sel = +k; draw() }
+		};
+		addEventListener("keydown", e => {
+			if (/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return; const ks = Object.keys(C).map(Number), i = ks.indexOf(sel);
+			if (e.key == "ArrowRight") sel = ks[Math.min(ks.length - 1, i + 1)]; else if (e.key == "ArrowLeft") sel = ks[Math.max(0, i - 1)]; else return; draw()
+		});
+		function out() {
+			let s = `info face="${hdr.face}" size=${hdr.size}\ncommon lineHeight=${lh} base=${base} scaleW=${hdr.sw} scaleH=${hdr.sh} pages=1\npage id=0 file="${hdr.page}"\nchars count=${Object.keys(C).length}\n`;
+			Object.keys(C).forEach(k => { const c = C[k], n = +k; s += `char id=${n}`.padEnd(11) + ` x=${c.x} y=${c.y} width=${c.w} height=${c.h} xoffset=${c.xo} yoffset=${c.yo} xadvance=${c.xa} page=0 chnl=0 letter="${n == 32 ? "space" : L(n)}"\n` }); return s
+		}
+		$("exp").onclick = () => { $("fnt").value = out() }; $("cp").onclick = () => { $("fnt").value = out(); try { navigator.clipboard.writeText($("fnt").value) } catch (e) { $("fnt").select() } };
+		$("load").onclick = () => {
+			const t = $("fnt").value, n = {}; const g = (s, k) => { const m = s.match(new RegExp("\\b" + k + '="?(-?[^\\s"]+)')); return m ? m[1] : null };
+			t.split("\n").forEach(l => {
+				if (/^char /.test(l)) { const id = +g(l, "id"); n[id] = { x: +g(l, "x"), y: +g(l, "y"), w: +g(l, "width"), h: +g(l, "height"), xo: +g(l, "xoffset"), yo: +g(l, "yoffset"), xa: +g(l, "xadvance") } }
+				else if (/^common /.test(l)) { lh = +g(l, "lineHeight"); base = +g(l, "base"); hdr.sw = +g(l, "scaleW"); hdr.sh = +g(l, "scaleH") } else if (/^info /.test(l)) { hdr.face = g(l, "face") || hdr.face; hdr.size = +g(l, "size") || hdr.size }
+			});
+			if (Object.keys(n).length) { C = n; sel = +Object.keys(C)[0]; draw() }
+		};
+		$("png").onchange = e => { const f = e.target.files[0]; if (!f) return; hdr.page = f.name; img.onload = () => { hdr.sw = img.width; hdr.sh = img.height; draw() }; img.src = URL.createObjectURL(f) };
+		img.onload = draw; img.src = IMG; draw();
+	</script>
+</body>
+
+</html>
