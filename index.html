@@ -620,7 +620,12 @@
 		});
 		function out() {
 			let s = `info face="${hdr.face}" size=${hdr.size}\ncommon lineHeight=${lh} base=${base} scaleW=${hdr.sw} scaleH=${hdr.sh} pages=1\npage id=0 file="${hdr.page}"\nchars count=${Object.keys(C).length}\n`;
-			Object.keys(C).forEach(k => { const c = C[k], n = +k; s += `char id=${n}`.padEnd(11) + ` x=${c.x} y=${c.y} width=${c.w} height=${c.h} xoffset=${c.xo} yoffset=${c.yo} xadvance=${c.xa} page=0 chnl=0 letter="${n == 32 ? "space" : L(n)}"\n` }); return s
+			Object.keys(C).map(Number).sort((a, b) => a - b).forEach(n => {
+				const c = C[n];
+				const letter = n == 32 ? "space" : L(n);
+				s += `char id=${String(n).padEnd(3)} x=${String(c.x).padStart(3)} y=${String(c.y).padStart(3)} width=${String(c.w).padStart(2)} height=${String(c.h).padStart(2)} xoffset=${String(c.xo).padStart(2)} yoffset=${String(c.yo).padStart(2)} xadvance=${String(c.xa).padStart(2)} page=0 chnl=0 letter="${letter}"\n`;
+			});
+			return s
 		}
 		$("exp").onclick = () => { $("fnt").value = out() }; $("cp").onclick = () => { $("fnt").value = out(); try { navigator.clipboard.writeText($("fnt").value) } catch (e) { $("fnt").select() } };
 		$("load").onclick = () => {
