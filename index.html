@@ -168,7 +168,7 @@
 			width: 10px;
 			height: 10px;
 			border-radius: 50%;
-			margin-right: 5px;
+			margin-left: 5px;
 			vertical-align: middle
 		}
 
@@ -300,13 +300,14 @@
 
 		.overlay-top {
 			top: 6px;
-			right: 6px;
-			text-align: right
+			left: 6px;
+			text-align: left
 		}
 
 		.overlay-bottom {
 			bottom: 6px;
-			left: 6px
+			right: 6px;
+			text-align: right
 		}
 
 		#grid {
@@ -433,11 +434,11 @@
 				<div class="sc"><canvas id="anat"></canvas></div>
 				<div class="overlay overlay-top" id="anaInfo"></div>
 				<div class="overlay overlay-bottom">
-					<p><span class="dot" style="background:var(--r)"></span>top</p>
-					<p><span class="dot" style="background:var(--g)"></span>base <code id="vb"></code></p>
-					<p><span class="dot" style="background:var(--b)"></span>lineHeight <code id="vl"></code></p>
-					<p><span class="dot" style="background:var(--o)"></span>bottom <code>yoffset + height</code></p>
-					<p><span class="dot" style="background:var(--p)"></span>xadvance <code id="xa"></code></p>
+					<p>top<span class="dot" style="background:var(--r)"></span></p>
+					<p><code id="vb"></code> base<span class="dot" style="background:var(--g)"></span></p>
+					<p><code id="vl"></code> lineHeight<span class="dot" style="background:var(--b)"></span></p>
+					<p><code>yoffset + height</code> bottom<span class="dot" style="background:var(--o)"></span></p>
+					<p><code id="xa"></code> xadvance<span class="dot" style="background:var(--p)"></span></p>
 				</div>
 			</div>
 		</div>
@@ -527,8 +528,8 @@
 			x.strokeStyle = css("--p"); x.lineWidth = 2; x.beginPath(); x.moveTo(ox + c.xa * Z, oy); x.lineTo(ox + c.xa * Z, oy + lh * Z); x.stroke();
 			$("vb").textContent = base; $("vl").textContent = lh; $("xa").textContent = c.xa;
 			const d = bottom - base;
-			const btxt = d == 0 ? "on base" : (d > 0 ? d + "px below base" : (-d) + "px above base");
-			$("anaInfo").innerHTML = `<b>“${L(sel)}”</b> <span class="mut">id ${sel}</span><br>(xoffset, yoffset) = (${c.xo}, ${c.yo})<br>bottom = ${c.yo} + ${c.h} = ${bottom}<br>xadvance = ${c.xa}<br><span class="${d ? "warn" : "good"}">baseline: ${btxt}</span>`;
+			const btxt = d === 0 ? "±0px" : (d > 0 ? `+${d}px` : `${d}px`);
+			$("anaInfo").innerHTML = `<b style="font-size:1.6em">“${L(sel)}”</b> <span class="mut">id ${sel}</span> <span class="${d ? "warn" : "good"}" style="font-size:1.25em;font-weight:700">${btxt}</span>`;
 		}
 		function atl() {
 			const Z = 4, x = ctxOf($("atlas"), hdr.sw * Z, hdr.sh * Z); x.fillStyle = css("--card"); x.fillRect(0, 0, x.canvas.width, x.canvas.height); x.drawImage(img, 0, 0, hdr.sw * Z, hdr.sh * Z);
