@@ -434,10 +434,11 @@
 				<div class="sc"><canvas id="anat"></canvas></div>
 				<div class="overlay overlay-top" id="anaInfo"></div>
 				<div class="overlay overlay-bottom">
-					<p>top<span class="dot" style="background:var(--r)"></span></p>
+					<p><code>0</code> top<span class="dot" style="background:var(--r)"></span></p>
 					<p><code id="vb"></code> base<span class="dot" style="background:var(--g)"></span></p>
 					<p><code id="vl"></code> lineHeight<span class="dot" style="background:var(--b)"></span></p>
-					<p><code>yoffset + height</code> bottom<span class="dot" style="background:var(--o)"></span></p>
+					<p><span id="vbd" style="font-weight:700"></span> <code id="vbot"></code> bottom<span class="dot"
+							style="background:var(--o)"></span></p>
 					<p><code id="xa"></code> xadvance<span class="dot" style="background:var(--p)"></span></p>
 				</div>
 			</div>
@@ -526,10 +527,11 @@
 				hl(g.y, lcol, parts);
 			});
 			x.strokeStyle = css("--p"); x.lineWidth = 2; x.beginPath(); x.moveTo(ox + c.xa * Z, oy); x.lineTo(ox + c.xa * Z, oy + lh * Z); x.stroke();
-			$("vb").textContent = base; $("vl").textContent = lh; $("xa").textContent = c.xa;
 			const d = bottom - base;
-			const btxt = d === 0 ? "±0px" : (d > 0 ? `+${d}px` : `${d}px`);
-			$("anaInfo").innerHTML = `<b style="font-size:1.6em">“${L(sel)}”</b> <span class="mut">id ${sel}</span> <span class="${d ? "warn" : "good"}" style="font-size:1.25em;font-weight:700">${btxt}</span>`;
+			$("vb").textContent = base; $("vl").textContent = lh; $("vbot").textContent = bottom; $("xa").textContent = c.xa;
+			$("vbd").textContent = d ? (d > 0 ? `+${d}px ` : `${d}px `) : "";
+			$("vbd").className = d ? "warn" : "good";
+			$("anaInfo").innerHTML = `<b style="font-size:1.6em">“${L(sel)}”</b> <span class="mut">id ${sel}</span>`;
 		}
 		function atl() {
 			const Z = 4, x = ctxOf($("atlas"), hdr.sw * Z, hdr.sh * Z); x.fillStyle = css("--card"); x.fillRect(0, 0, x.canvas.width, x.canvas.height); x.drawImage(img, 0, 0, hdr.sw * Z, hdr.sh * Z);
