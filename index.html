@@ -297,11 +297,6 @@
 		<div class="card">
 			<p class="cardname">Text preview</p>
 			<label>Preview <input id="txt" size="28" value="Hag Jyp 0123 Quick fox, jumps!"></label>
-			<label>zoom <select id="zm">
-					<option>2</option>
-					<option selected>4</option>
-					<option>6</option>
-				</select></label>
 			<label><input type="checkbox" id="gd" checked> guides</label>
 			<div class="sc"><canvas id="prev"></canvas></div>
 			<p class="mut">Click atlas to select:</p>
@@ -342,7 +337,7 @@
 			$("anaInfo").innerHTML = `<b>“${L(sel)}”</b><br><span class="${d ? "warn" : "mut"}">baseline: ${btxt}</span><br>top-left = (xoffset, yoffset) = (${c.xo}, ${c.yo})<br>bottom = yoffset + height = ${c.yo} + ${c.h} = ${bottom}<br>xadvance = ${c.xa}`;
 		}
 		function prev() {
-			const Z = +$("zm").value, lines = $("txt").value.split("\n"), W = Math.max(260, Math.min(980, lines.reduce((m, s) => Math.max(m, [...s].reduce((a, ch) => a + ((C[ch.charCodeAt(0)] || {}).xa || 0), 0)), 0) + 8)) * Z, x = ctxOf($("prev"), W, (lines.length * lh + 4) * Z);
+			const Z = 4, lines = $("txt").value.split("\n"), W = Math.max(260, Math.min(980, lines.reduce((m, s) => Math.max(m, [...s].reduce((a, ch) => a + ((C[ch.charCodeAt(0)] || {}).xa || 0), 0)), 0) + 8)) * Z, x = ctxOf($("prev"), W, (lines.length * lh + 4) * Z);
 			x.fillStyle = css("--card"); x.fillRect(0, 0, W, x.canvas.height);
 			lines.forEach((s, i) => {
 				const y0 = (2 + i * lh) * Z; let px = 4 * Z;
@@ -390,7 +385,7 @@
 		$("up").onclick = () => { C[sel].yo--; draw() }; $("dn").onclick = () => { C[sel].yo++; draw() };
 		const G = { all: () => 1, up: s => /[A-Z]/.test(s), low: s => /[a-z]/.test(s), desc: s => /[gjpqy]/.test(s), nodesc: s => /[a-z]/.test(s) && !/[gjpqy]/.test(s), dig: s => /[0-9]/.test(s), pun: s => /[^A-Za-z0-9 ]/.test(s) };
 		$("apply").onclick = () => { const f = G[$("grp").value], d = +$("dy").value; Object.keys(C).forEach(k => { if (f(L(+k))) C[k].yo += d }); draw() };
-		["txt", "zm", "gd"].forEach(i => $(i).oninput = prev);
+		["txt", "gd"].forEach(i => $(i).oninput = prev);
 		$("atlas").onclick = e => {
 			const r = e.target.getBoundingClientRect(), px = (e.clientX - r.left) / r.width * hdr.sw, py = (e.clientY - r.top) / r.height * hdr.sh;
 			const k = Object.keys(C).find(k => { const c = C[k]; return px >= c.x && px < c.x + c.w && py >= c.y && py < c.y + c.h }); if (k) { sel = +k; draw() }
