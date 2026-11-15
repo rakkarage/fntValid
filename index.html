@@ -393,13 +393,36 @@
 			}
 			$("sum").textContent = `${all.size}/${Object.keys(C).length} flagged`
 		}
-		$("fixb").onclick = () => { const ds = $("dset").value; Object.keys(C).forEach(k => { const s = L(+k), c = C[k]; if (/[A-Za-z0-9]/.test(s) && !ds.includes(s)) c.yo = base - c.h }); draw() };
-		$("fixl").onclick = () => { lh = Math.max(...Object.values(C).map(c => c.yo + c.h)); draw() };
-		$("norm").onclick = () => {
-			const v = Object.values(C), dy = (+$("top").value) - Math.min(...v.map(c => c.yo)); v.forEach(c => c.yo += dy);
-			const ds = $("dset").value, m = {}; Object.keys(C).forEach(k => { const s = L(+k); if (/[A-Za-z0-9]/.test(s) && !ds.includes(s)) { const b = C[k].yo + C[k].h; m[b] = (m[b] || 0) + 1 } });
-			const t = Object.entries(m).sort((a, b) => b[1] - a[1])[0]; if (t) base = +t[0]; lh = Math.max(...v.map(c => c.yo + c.h)) + (+$("gap").value); draw()
-		};
+		function modeOf(a) { const m = {}; a.forEach(v => m[v] = (m[v] || 0) + 1); const t = Object.entries(m).sort((a, b) => b[1] - a[1])[0]; return t ? +t[0] : null }
+		function autoFix() {
+			const ds = $("dset").value, top = +$("top").value, gap = +$("gap").value;
+			const keys = Object.keys(C);
+			const flat = k => { const s = L(+k); return /[A-Za-z0-9]/.test(s) && !ds.includes(s) };
+			// 1. base = most common bottom among flat glyphs (read BEFORE moving anything)
+			const b0 = modeOf(keys.filter(flat).map(k => C[k].yo + C[k].h));
+			if (b0 == null) return;
+			// 2. snap flat glyphs to b0
+			keys.filter(flat).forEach(k => { C[k].yo = b0 - C[k].h });
+			// descenders: align tops to x-height top; 'j' dot aligns with 'i'
+			const xTop = modeOf(keys.filter(k => flat(k) && /[a-z]/.test(L(+k))).map(k => C[k].yo));
+			if (xTop != null) {
+				keys.forEach(k => {
+					const s = L(+k);
+					if (!/[A-Za-z]/.test(s) || !ds.includes(s)) return;
+					if (s === "j" && C[105]) C[k].yo = C[105].yo;
+					else C[k].yo = xTop;
+				});
+			}
+			// 3. shift everything so min yo = top; base moves with it
+			const dy = top - Math.min(...keys.map(k => C[k].yo));
+			keys.forEach(k => { C[k].yo += dy }); base = b0 + dy;
+			// 4. fit line box
+			lh = Math.max(...keys.map(k => C[k].yo + C[k].h)) + gap;
+			draw();
+		}
+		$("fixb").onclick = autoFix;
+		$("fixl").onclick = autoFix;
+		$("norm").onclick = autoFix;
 		$("dset").oninput = checks;
 		function draw() { grid(); sync(); anat(); prev(); atl(); checks() }
 		$("iyo").oninput = e => { C[sel].yo = +e.target.value; draw() }; $("ixo").oninput = e => { C[sel].xo = +e.target.value; draw() }; $("ixa").oninput = e => { C[sel].xa = +e.target.value; draw() };
