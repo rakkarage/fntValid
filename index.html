@@ -379,6 +379,18 @@
 				bad.forEach(k => { const b = document.createElement("button"); b.textContent = k == 32 ? "␣" : L(+k); b.style.cssText = "flex:1 0 2em;min-width:2em;padding:2px 0" + (k == sel ? ";background:var(--acc);color:#fff" : ""); b.onclick = () => { sel = +k; draw() }; w.appendChild(b) });
 				d.appendChild(w); out.appendChild(d)
 			});
+			const v = Object.values(C);
+			if (v.length) {
+				const minY = Math.min(...v.map(c => c.yo)), maxB = Math.max(...v.map(c => c.yo + c.h));
+				const top = +$("top").value, gap = +$("gap").value;
+				const topOk = minY === top, lhOk = lh === maxB + gap;
+				[["top gap = minY", topOk, `top ${top}, min yoffset ${minY}`],
+				["lineHeight = maxBottom + gap", lhOk, `lineHeight ${lh}, max bottom+gap ${maxB + gap}`]].forEach(([t, ok, h]) => {
+					const d = document.createElement("div");
+					d.innerHTML = `<p><b>${ok ? "✓" : "✗"} ${t}</b> <span class="mut">${h}</span></p>`;
+					out.appendChild(d)
+				})
+			}
 			$("sum").textContent = `${all.size}/${Object.keys(C).length} flagged`
 		}
 		$("fixb").onclick = () => { const ds = $("dset").value; Object.keys(C).forEach(k => { const s = L(+k), c = C[k]; if (/[A-Za-z0-9]/.test(s) && !ds.includes(s)) c.yo = base - c.h }); draw() };
