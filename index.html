@@ -88,6 +88,8 @@
 		}
 
 		canvas {
+			display: block;
+			box-sizing: border-box;
 			image-rendering: pixelated;
 			max-width: 100%;
 			border: 1px solid var(--line);
@@ -96,7 +98,9 @@
 		}
 
 		.sc {
-			overflow-x: auto
+			overflow-x: auto;
+			overflow-y: hidden;
+			line-height: 0
 		}
 
 		code,
@@ -206,7 +210,6 @@
 		}
 
 		.preview-box canvas {
-			display: block;
 			width: 100%;
 			height: auto
 		}
@@ -274,11 +277,11 @@
 			<hr>
 			<select id="grp">
 				<option value="all">all</option>
-				<option value="up">A–Z</option>
-				<option value="low">a–z</option>
+				<option value="up">A-Z</option>
+				<option value="low">a-z</option>
 				<option value="desc">descenders g j p q y</option>
-				<option value="nodesc">a–z no descenders</option>
-				<option value="dig">0–9</option>
+				<option value="nodesc">a-z no descenders</option>
+				<option value="dig">0-9</option>
 				<option value="pun">punctuation</option>
 			</select>
 			<label>Δy <input type="number" id="dy" value="-1"></label><button id="apply">Apply</button>
