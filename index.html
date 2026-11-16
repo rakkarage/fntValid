@@ -453,7 +453,6 @@
 			<label>yoffset <input type="number" id="iyo"></label>
 			<label>xoffset <input type="number" id="ixo"></label>
 			<label>xadvance <input type="number" id="ixa"></label>
-			<span class="btns" style="display:inline-flex"><button id="up">▲</button><button id="dn">▼</button></span>
 			<hr>
 			<select id="grp">
 				<option value="all">all</option>
@@ -606,7 +605,6 @@
 		const edit = (fn, k) => e => { snap(typeof k == "function" ? k() : k); fn(e); draw() };
 		$("iyo").oninput = edit(e => C[sel].yo = +e.target.value, () => "yo" + sel); $("ixo").oninput = edit(e => C[sel].xo = +e.target.value, () => "xo" + sel); $("ixa").oninput = edit(e => C[sel].xa = +e.target.value, () => "xa" + sel);
 		$("ibase").oninput = edit(e => base = +e.target.value, "base"); $("ilh").oninput = edit(e => lh = +e.target.value, "lh");
-		$("up").onclick = edit(() => C[sel].yo--); $("dn").onclick = edit(() => C[sel].yo++);
 		$("undo").onclick = undo; $("redo").onclick = redo;
 		$("theme").onclick = () => { const r = document.documentElement, dark = r.dataset.theme ? r.dataset.theme === "dark" : matchMedia("(prefers-color-scheme:dark)").matches; r.dataset.theme = dark ? "light" : "dark"; draw() };
 		const G = { all: () => 1, up: s => /[A-Z]/.test(s), low: s => /[a-z]/.test(s), desc: s => /[gjpqy]/.test(s), nodesc: s => /[a-z]/.test(s) && !/[gjpqy]/.test(s), dig: s => /[0-9]/.test(s), pun: s => /[^A-Za-z0-9 ]/.test(s) };
