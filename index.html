@@ -594,12 +594,30 @@
 		function drawGlyphAnatomy() {
 			const glyph = glyphs[selectedCode];
 			const ZOOM = 28;
-			const W = 24 * ZOOM;
-			const H = (lineHeight + 3) * ZOOM;
-
-			const ctx = makeCanvasContext($("anat"), W, H);
 			const originX = 4 * ZOOM;
 			const originY = 1 * ZOOM;
+
+			// Trim canvas to content: left pad + glyph/advance extent + right pad for guide labels
+			const contentRight = Math.max(glyph.xa, glyph.xo + glyph.w, 1);
+			const tempW = (4 + contentRight + 10) * ZOOM;
+			const tempCtx = makeCanvasContext($("anat"), tempW, (lineHeight + 3) * ZOOM);
+			tempCtx.font = "12px system-ui";
+			// label space: longest guide label like "base, bottom 16"
+			const labelPad = Math.ceil(
+				Math.max(
+					tempCtx.measureText("top " + 0).width,
+					tempCtx.measureText("base " + baseline).width,
+					tempCtx.measureText("lineHeight " + lineHeight).width,
+					tempCtx.measureText("bottom " + (glyph.yo + glyph.h)).width,
+					tempCtx.measureText("base, bottom " + Math.max(baseline, glyph.yo + glyph.h)).width
+				) / ZOOM
+			) + 1;
+
+			const W = Math.ceil((4 + contentRight + labelPad + 1) * ZOOM);
+			const H = (lineHeight + 2) * ZOOM;
+
+			const ctx = makeCanvasContext($("anat"), W, H);
+			ctx.font = "12px system-ui";
 
 			ctx.fillStyle = cssVar("--card");
 			ctx.fillRect(0, 0, W, H);
@@ -631,16 +649,17 @@
 
 			const glyphBottom = glyph.yo + glyph.h;
 
-			const drawGuide = (yInGlyphSpace, color, labelParts) => {
+			const drawGuide = (yInGlyphSpace, color, labelParts, labelX) => {
+				const gy = originY + yInGlyphSpace * ZOOM;
 				ctx.strokeStyle = color;
 				ctx.lineWidth = 2;
 				ctx.beginPath();
-				ctx.moveTo(ZOOM, originY + yInGlyphSpace * ZOOM);
-				ctx.lineTo(W - ZOOM, originY + yInGlyphSpace * ZOOM);
+				ctx.moveTo(ZOOM, gy);
+				ctx.lineTo(W - ZOOM, gy);
 				ctx.stroke();
 
-				let px = W - ZOOM * 9;
-				let py = originY + yInGlyphSpace * ZOOM - 3;
+				let px = labelX;
+				let py = gy - 3;
 				ctx.font = "12px system-ui";
 				for (const part of labelParts) {
 					ctx.fillStyle = part.col;
@@ -676,7 +695,14 @@
 				});
 				parts.push({ t: " " + group.value, col: lineColor });
 
-				drawGuide(group.y, lineColor, parts);
+				// place labels to the right of content, clamped inside canvas
+				const labelText = parts.map(p => p.t).join("");
+				const labelW = ctx.measureText(labelText).width;
+				const labelX = Math.min(
+					originX + contentRight * ZOOM + 6,
+					W - labelW - 4
+				);
+				drawGuide(group.y, lineColor, parts, labelX);
 			}
 
 			// vertical xadvance line
