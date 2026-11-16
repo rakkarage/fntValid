@@ -491,8 +491,9 @@
 			</div>
 			<p class="mut" id="hint">Drop a .fnt and/or its .png anywhere on this page, or open both together.</p>
 			<div class="btns" style="margin-top:8px">
-				<button class="pri" id="demo1">Load Demo 1 (Venice16)</button>
-				<button class="pri" id="demo2">Load Demo 2 (Super12)</button>
+				<button class="pri" id="demo1">Load Demo 1 (Super12)</button>
+				<button class="pri" id="demo2">Load Demo 2 (Venice16)</button>
+				<button class="pri" id="demo3">Load Demo 3 (lsans-15)</button>
 			</div>
 		</div>
 	</main>
@@ -725,8 +726,9 @@
 				$("hint").textContent = `Could not load demo ${name}. If opened as a local file, use a local server or Open .fnt + .png….`;
 			}
 		}
-		$("demo1").onclick = () => loadDemo("Font/Venice16.fnt", "Venice16");
-		$("demo2").onclick = () => loadDemo("Font/Super12.fnt", "Super12");
+		$("demo1").onclick = () => loadDemo("Font/Super12.fnt", "Venice16");
+		$("demo2").onclick = () => loadDemo("Font/Venice16.fnt", "Super12");
+		$("demo3").onclick = () => loadDemo("Font/lsans-15.fnt", "lsans-15");
 		img.onload = draw;
 		draw();
 	</script>
