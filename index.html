@@ -490,11 +490,13 @@
 				<button id="dl">Download .fnt</button>
 			</div>
 			<p class="mut" id="hint">Drop a .fnt and/or its .png anywhere on this page, or open both together.</p>
-			<p class="mut" style="margin-top:8px">Examples: <a href="https://rakkarage.github.io/fntValid/Font/Venice16.fnt">Venice16.fnt</a> + <a href="https://rakkarage.github.io/fntValid/Font/Venice16.png">.png</a>, <a href="https://rakkarage.github.io/fntValid/Font/Super12.fnt">Super12.fnt</a> + <a href="https://rakkarage.github.io/fntValid/Font/Super12.png">.png</a> · <a href="https://rakkarage.github.io/fntValid/Font.zip">Font.zip</a></p>
+			<div class="btns" style="margin-top:8px">
+				<button class="pri" id="demo1">Load Demo 1 (Venice16)</button>
+				<button class="pri" id="demo2">Load Demo 2 (Super12)</button>
+			</div>
 		</div>
 	</main>
 	<script>
-		const FONT = "Font/Venice16.fnt";
 		let C = {}, hdr = { face: "", size: 0, sw: 0, sh: 0, page: "" }, lh = 0, base = 0, sel = 65, img = new Image, bad = new Set, hist = [], fut = [], lastKey = null, lastT = 0, pend = null;
 		const $ = i => document.getElementById(i), css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 		const L = c => String.fromCharCode(c);
@@ -596,20 +598,39 @@
 		}
 		$("fix").onclick = autoFix;
 		$("dset").oninput = draw; $("top").oninput = checks; $("gap").oninput = checks;
+		const hasChars = () => Object.keys(C).length > 0;
 		function draw() {
 			if (pend !== null && state() === pend) { hist.pop(); fut = []; }
 			pend = null;
 			$("undo").disabled = !hist.length; $("redo").disabled = !fut.length;
+			if (!hasChars()) {
+				$("sum").textContent = "No font loaded";
+				$("sum").className = "pill";
+				$("chk").innerHTML = "";
+				$("grid").innerHTML = "";
+				$("selinfo").textContent = "Load a .fnt + .png, or use a demo.";
+				$("anaInfo").innerHTML = "";
+				$("vb").textContent = ""; $("vl").textContent = ""; $("vbot").textContent = ""; $("xa").textContent = ""; $("vbd").textContent = "";
+				document.querySelector(".overlay-top").style.display = "none";
+				document.querySelector(".overlay-bottom").style.display = "none";
+				$("atlas").getContext("2d").clearRect(0, 0, $("atlas").width, $("atlas").height);
+				$("anat").getContext("2d").clearRect(0, 0, $("anat").width, $("anat").height);
+				return;
+			}
+			document.querySelector(".overlay-top").style.display = "";
+			document.querySelector(".overlay-bottom").style.display = "";
 			checks(); grid(); sync(); anat(); atl()
 		}
-		const edit = (fn, k) => e => { snap(typeof k == "function" ? k() : k); fn(e); draw() };
+		const edit = (fn, k) => e => { if (!hasChars()) return; snap(typeof k == "function" ? k() : k); fn(e); draw() };
 		$("iyo").oninput = edit(e => C[sel].yo = +e.target.value, () => "yo" + sel); $("ixo").oninput = edit(e => C[sel].xo = +e.target.value, () => "xo" + sel); $("ixa").oninput = edit(e => C[sel].xa = +e.target.value, () => "xa" + sel);
 		$("ibase").oninput = edit(e => base = +e.target.value, "base"); $("ilh").oninput = edit(e => lh = +e.target.value, "lh");
+		$("apply").onclick = () => { if (!hasChars()) return; snap(); const f = G[$("grp").value], d = +$("dy").value; Object.keys(C).forEach(k => { if (f(L(+k))) C[k].yo += d }); draw() };
 		$("undo").onclick = undo; $("redo").onclick = redo;
 		$("theme").onclick = () => { const r = document.documentElement, dark = r.dataset.theme ? r.dataset.theme === "dark" : matchMedia("(prefers-color-scheme:dark)").matches; r.dataset.theme = dark ? "light" : "dark"; draw() };
 		const G = { all: () => 1, up: s => /[A-Z]/.test(s), low: s => /[a-z]/.test(s), desc: s => /[gjpqy]/.test(s), nodesc: s => /[a-z]/.test(s) && !/[gjpqy]/.test(s), dig: s => /[0-9]/.test(s), pun: s => /[^A-Za-z0-9 ]/.test(s) };
-		$("apply").onclick = () => { snap(); const f = G[$("grp").value], d = +$("dy").value; Object.keys(C).forEach(k => { if (f(L(+k))) C[k].yo += d }); draw() };
+		/* apply handler set above */
 		$("atlas").onclick = e => {
+			if (!hasChars()) return;
 			const r = e.target.getBoundingClientRect(), px = (e.clientX - r.left) / r.width * hdr.sw, py = (e.clientY - r.top) / r.height * hdr.sh;
 			const k = Object.keys(C).find(k => { const c = C[k]; return px >= c.x && px < c.x + c.w && py >= c.y && py < c.y + c.h }); if (k) { sel = +k; draw() }
 		};
@@ -619,7 +640,7 @@
 				if (k === "z") { e.preventDefault(); e.shiftKey ? redo() : undo(); return }
 				if (k === "y") { e.preventDefault(); redo(); return }
 			}
-			if (/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return; const ks = Object.keys(C).map(Number), i = ks.indexOf(sel);
+			if (/INPUT|TEXTAREA|SELECT/.test(e.target.tagName) || !hasChars()) return; const ks = Object.keys(C).map(Number), i = ks.indexOf(sel);
 			if (e.key == "ArrowRight") sel = ks[Math.min(ks.length - 1, i + 1)]; else if (e.key == "ArrowLeft") sel = ks[Math.max(0, i - 1)];
 			else if (e.key == "ArrowUp") { snap("nudge" + sel); C[sel].yo-- } else if (e.key == "ArrowDown") { snap("nudge" + sel); C[sel].yo++ } else return; e.preventDefault(); draw()
 		});
@@ -681,6 +702,7 @@
 		addEventListener("drop", e => { if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) { e.preventDefault(); openFiles(e.dataTransfer.files) } });
 		$("fnt").addEventListener("paste", () => setTimeout(() => { snap(); if (parseFnt($("fnt").value)) draw(); else drop() }));
 		$("dl").onclick = () => {
+			if (!hasChars()) return;
 			$("fnt").value = out();
 			const a = document.createElement("a");
 			a.href = URL.createObjectURL(new Blob([$("fnt").value], { type: "text/plain" }));
@@ -688,8 +710,25 @@
 			a.click();
 			setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 		};
+		async function loadDemo(path, name) {
+			try {
+				const r = await fetch(path);
+				if (!r.ok) throw r.status;
+				const t = await r.text();
+				snap();
+				$("fnt").value = t;
+				if (parseFnt(t, path)) $("hint").textContent = `Loaded demo ${name}.`;
+				else { drop(); $("hint").textContent = `Could not parse demo ${name}.` }
+			} catch (e) {
+				drop();
+				console.error("Failed to load demo", path, e);
+				$("hint").textContent = `Could not load demo ${name}. If opened as a local file, use a local server or Open .fnt + .png….`;
+			}
+		}
+		$("demo1").onclick = () => loadDemo("Font/Venice16.fnt", "Venice16");
+		$("demo2").onclick = () => loadDemo("Font/Super12.fnt", "Super12");
 		img.onload = draw;
-		fetch(FONT).then(r => r.ok ? r.text() : Promise.reject(r.status)).then(t => { $("fnt").value = t; parseFnt(t, FONT) }).catch(e => console.error("Failed to load font", FONT, e));
+		draw();
 	</script>
 </body>
 
