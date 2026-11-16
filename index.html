@@ -563,8 +563,8 @@
 			if (v.length) {
 				const minY = Math.min(...v.map(c => c.yo)), maxB = Math.max(...v.map(c => c.yo + c.h));
 				const top = +$("top").value, gap = +$("gap").value;
-				row(minY === top, "Top gap = minY", `top ${top}, min yoffset ${minY}`, minY === top ? 0 : 1);
-				row(lh === maxB + gap, "lineHeight = maxBottom + gap", `lineHeight ${lh}, max bottom+gap ${maxB + gap}`, lh === maxB + gap ? 0 : 1);
+				row(minY === top, "Top edge aligned", minY === top ? "highest glyph at top gap" : `highest glyph at top gap · expected ${top}, got ${minY}`);
+				row(lh === maxB + gap, "Line height fits", lh === maxB + gap ? "lowest glyph + bottom gap" : `lowest glyph + bottom gap · expected ${maxB + gap}, got ${lh}`);
 			}
 			const s = $("sum"); s.textContent = bad.size ? `${bad.size}/${Object.keys(C).length} glyphs flagged` : (fails ? "line box needs a fix" : "All checks pass"); s.className = "pill" + (fails ? "" : " ok")
 		}
