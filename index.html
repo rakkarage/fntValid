@@ -479,13 +479,18 @@
 			<div id="chk"></div>
 		</div>
 
-		<div class="card">
+		<div class="card" id="filecard">
 			<p class="cardname">Font file</p>
 			<textarea id="fnt" rows="8" spellcheck="false" placeholder="Paste .fnt here"></textarea>
-			<div class="btns"><button id="load">Load .fnt</button><button id="exp">Export</button><button
-					id="cp">Copy</button>
-				<label>PNG <input type="file" id="png" accept="image/png"></label>
+			<div class="btns">
+				<button id="open" class="pri">Open .fnt + .png…</button>
+				<input type="file" id="files" accept=".fnt,.txt,.png,image/png" multiple hidden>
+				<button id="load">Load .fnt</button>
+				<button id="exp">Export</button>
+				<button id="cp">Copy</button>
+				<button id="dl">Download .fnt</button>
 			</div>
+			<p class="mut" id="hint">Drop a .fnt and/or its .png anywhere on this page, or open both together.</p>
 			<p class="mut" style="margin-top:8px">Examples: <a href="https://rakkarage.github.io/fntValid/Font/Venice16.fnt">Venice16.fnt</a> + <a href="https://rakkarage.github.io/fntValid/Font/Venice16.png">.png</a>, <a href="https://rakkarage.github.io/fntValid/Font/Super12.fnt">Super12.fnt</a> + <a href="https://rakkarage.github.io/fntValid/Font/Super12.png">.png</a> · <a href="https://rakkarage.github.io/fntValid/Font.zip">Font.zip</a></p>
 		</div>
 	</main>
@@ -630,7 +635,7 @@
 			return s
 		}
 		$("exp").onclick = () => { $("fnt").value = out() }; $("cp").onclick = () => { $("fnt").value = out(); try { navigator.clipboard.writeText($("fnt").value) } catch (e) { $("fnt").select() } };
-		function parseFnt(t, basePath) {
+		function parseFnt(t, basePath, skipImg) {
 			const n = {}, h = { ...hdr }; let nl = lh, nb = base;
 			const g = (s, k) => { const m = s.match(new RegExp("\\b" + k + '="?(-?[^\\s"]+)')); return m ? m[1] : null };
 			t.split("\n").forEach(l => {
@@ -641,12 +646,50 @@
 			});
 			if (!Object.keys(n).length) return false;
 			C = n; lh = nl; base = nb; hdr = h; sel = +Object.keys(C)[0];
-			if (hdr.page) { const dir = basePath ? basePath.replace(/[^/]*$/, "") : ""; img.onload = draw; img.src = dir + hdr.page }
+			if (hdr.page && !skipImg) { const dir = basePath ? basePath.replace(/[^/]*$/, "") : ""; img.onload = draw; img.src = dir + hdr.page }
 			else draw();
 			return true
 		}
 		$("load").onclick = () => { snap(); if (parseFnt($("fnt").value)) draw(); else drop() };
-		$("png").onchange = e => { const f = e.target.files[0]; if (!f) return; hdr.page = f.name; img.onload = () => { hdr.sw = img.width; hdr.sh = img.height; draw() }; img.src = URL.createObjectURL(f) };
+		let pendingFnt = null, pendingPng = null;
+		const loadImg = f => new Promise(res => {
+			img.onload = () => { hdr.sw = img.width; hdr.sh = img.height; res() };
+			img.src = URL.createObjectURL(f);
+		});
+		async function openFiles(list) {
+			const fs = [...(list || [])];
+			const fnt = fs.find(f => /\.(fnt|txt)$/i.test(f.name));
+			const png = fs.find(f => /\.png$/i.test(f.name) || f.type === "image/png");
+			if (fnt) pendingFnt = await fnt.text();
+			if (png) { pendingPng = png; await loadImg(png); }
+			img.onload = draw;
+			if (pendingFnt != null && pendingPng) {
+				snap();
+				$("fnt").value = pendingFnt;
+				if (parseFnt(pendingFnt, null, true)) { hdr.sw = img.width; hdr.sh = img.height; draw(); $("hint").textContent = `Loaded ${fnt ? fnt.name : ".fnt"} + ${png.name}.` }
+				else { drop(); $("hint").textContent = "Could not parse .fnt." }
+			} else if (pendingFnt != null) {
+				snap();
+				$("fnt").value = pendingFnt;
+				if (parseFnt(pendingFnt, null, true)) $("hint").textContent = "Loaded .fnt. Now add the matching .png (or drop/open both together).";
+				else { drop(); $("hint").textContent = "Could not parse .fnt." }
+			} else if (pendingPng) {
+				$("hint").textContent = `Loaded ${png.name}. Now add the matching .fnt.`;
+			}
+		}
+		$("open").onclick = () => $("files").click();
+		$("files").onchange = e => { openFiles(e.target.files); e.target.value = "" };
+		addEventListener("dragover", e => { if (e.dataTransfer && [...e.dataTransfer.types || []].includes("Files")) e.preventDefault() });
+		addEventListener("drop", e => { if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) { e.preventDefault(); openFiles(e.dataTransfer.files) } });
+		$("fnt").addEventListener("paste", () => setTimeout(() => { snap(); if (parseFnt($("fnt").value)) draw(); else drop() }));
+		$("dl").onclick = () => {
+			$("fnt").value = out();
+			const a = document.createElement("a");
+			a.href = URL.createObjectURL(new Blob([$("fnt").value], { type: "text/plain" }));
+			a.download = ((hdr.face || "font").replace(/[^\w.-]+/g, "_") || "font") + ".fnt";
+			a.click();
+			setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+		};
 		img.onload = draw;
 		fetch(FONT).then(r => r.ok ? r.text() : Promise.reject(r.status)).then(t => { $("fnt").value = t; parseFnt(t, FONT) }).catch(e => console.error("Failed to load font", FONT, e));
 	</script>
