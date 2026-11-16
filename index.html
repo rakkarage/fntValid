@@ -486,14 +486,13 @@
 					id="cp">Copy</button>
 				<label>PNG <input type="file" id="png" accept="image/png"></label>
 			</div>
+			<p class="mut" style="margin-top:8px">Examples: <a href="https://rakkarage.github.io/fntValid/Font/Venice16.fnt">Venice16.fnt</a> + <a href="https://rakkarage.github.io/fntValid/Font/Venice16.png">.png</a>, <a href="https://rakkarage.github.io/fntValid/Font/Super12.fnt">Super12.fnt</a> + <a href="https://rakkarage.github.io/fntValid/Font/Super12.png">.png</a> · <a href="https://rakkarage.github.io/fntValid/Font.zip">Font.zip</a></p>
 		</div>
 	</main>
 	<script>
-		const IMG = "Font/Venice16.png";
-		const D = "32,32,63,5,12,3,5;33,98,42,4,12,3,4;34,151,54,6,5,2,6;35,114,42,10,10,4,10;36,108,17,7,13,3,7;37,65,30,11,12,3,11;38,14,30,13,12,3,13;39,162,54,3,5,2,3;40,60,0,6,14,2,6;41,54,0,6,14,2,6;42,124,54,8,7,6,8;43,73,54,9,9,5,9;44,132,54,4,6,11,4;45,23,63,9,3,8,9;46,8,63,4,4,11,4;47,92,17,8,13,3,8;48,60,42,8,12,3,8;49,92,42,6,12,3,6;50,18,42,9,12,3,9;51,9,42,9,12,3,9;52,141,30,10,12,3,10;53,84,42,8,12,3,8;54,36,42,8,12,3,8;55,27,42,9,12,3,9;56,44,42,8,12,3,8;57,52,42,8,12,3,8;58,120,54,4,9,6,4;59,110,42,4,11,6,4;60,106,54,7,9,5,7;61,136,54,8,5,7,8;62,113,54,7,9,5,7;63,68,42,8,12,3,8;64,0,67,13,12,3,13;65,81,0,15,13,2,15;66,0,17,11,13,2,11;67,161,30,9,12,3,9;68,136,0,12,13,2,12;69,148,0,12,13,2,12;70,11,17,11,13,2,11;71,53,30,12,12,3,12;72,110,0,14,13,2,14;73,151,30,10,12,3,10;74,19,0,7,16,3,7;75,0,30,14,12,3,14;76,120,30,11,12,3,11;77,122,17,16,12,3,16;78,40,30,13,12,3,13;79,131,30,10,12,3,10;80,109,30,11,12,3,11;81,32,0,10,14,3,10;82,96,0,14,13,2,14;83,0,42,9,12,3,9;84,87,30,11,12,3,11;85,27,30,13,12,3,13;86,76,30,11,12,3,11;87,153,17,14,12,3,14;88,138,17,15,12,3,15;89,8,0,11,16,3,11;90,98,30,11,12,3,11;91,66,0,6,14,2,6;92,100,17,8,13,3,8;93,72,0,6,14,2,6;94,144,54,7,5,2,7;95,12,63,11,3,8,11;96,157,54,5,5,2,5;97,24,54,11,9,6,11;98,74,17,9,13,2,9;99,82,54,8,9,6,8;100,124,0,12,13,2,12;101,55,54,9,9,6,9;102,0,0,8,17,2,8;103,83,17,9,13,6,9;104,22,17,11,13,2,11;105,76,42,8,12,3,8;106,26,0,6,16,3,6;107,33,17,11,13,2,11;108,115,17,7,13,2,7;109,124,42,17,9,6,17;110,0,54,12,9,6,12;111,64,54,9,9,6,9;112,54,17,10,13,6,10;113,64,17,10,13,6,10;114,98,54,8,9,6,8;115,90,54,8,9,6,8;116,102,42,8,11,4,8;117,12,54,12,9,6,12;118,35,54,10,9,6,10;119,141,42,15,9,6,15;120,156,42,12,9,6,12;121,44,17,10,13,6,10;122,45,54,10,9,6,10;123,42,0,6,14,2,6;124,78,0,3,14,2,3;125,48,0,6,14,2,6;126,0,63,8,4,6,8";
-		let C = {}, hdr = { face: "Venice16", size: 16, sw: 171, sh: 79, page: "Venice16.png" }, lh = 16, base = 13, sel = 65, img = new Image, bad = new Set, hist = [], fut = [], lastKey = null, lastT = 0, pend = null;
+		const FONT = "Font/Venice16.fnt";
+		let C = {}, hdr = { face: "", size: 0, sw: 0, sh: 0, page: "" }, lh = 0, base = 0, sel = 65, img = new Image, bad = new Set, hist = [], fut = [], lastKey = null, lastT = 0, pend = null;
 		const $ = i => document.getElementById(i), css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-		D.split(";").forEach(r => { const [a, x, y, w, h, yo, xa] = r.split(",").map(Number); C[a] = { x, y, w, h, xo: 0, yo, xa } });
 		const L = c => String.fromCharCode(c);
 		const glyphName = k => k == 32 ? "␣" : L(+k);
 		const state = () => JSON.stringify({ C, base, lh });
@@ -631,18 +630,25 @@
 			return s
 		}
 		$("exp").onclick = () => { $("fnt").value = out() }; $("cp").onclick = () => { $("fnt").value = out(); try { navigator.clipboard.writeText($("fnt").value) } catch (e) { $("fnt").select() } };
-		$("load").onclick = () => {
-			const t = $("fnt").value, n = {}; const g = (s, k) => { const m = s.match(new RegExp("\\b" + k + '="?(-?[^\\s"]+)')); return m ? m[1] : null };
+		function parseFnt(t, basePath) {
+			const n = {}, h = { ...hdr }; let nl = lh, nb = base;
+			const g = (s, k) => { const m = s.match(new RegExp("\\b" + k + '="?(-?[^\\s"]+)')); return m ? m[1] : null };
 			t.split("\n").forEach(l => {
 				if (/^char /.test(l)) { const id = +g(l, "id"); n[id] = { x: +g(l, "x"), y: +g(l, "y"), w: +g(l, "width"), h: +g(l, "height"), xo: +g(l, "xoffset"), yo: +g(l, "yoffset"), xa: +g(l, "xadvance") } }
-				else if (/^common /.test(l)) { lh = +g(l, "lineHeight"); base = +g(l, "base"); hdr.sw = +g(l, "scaleW"); hdr.sh = +g(l, "scaleH") }
-				else if (/^info /.test(l)) { hdr.face = g(l, "face") || hdr.face; hdr.size = +g(l, "size") || hdr.size }
-				else if (/^page /.test(l)) { hdr.page = g(l, "file") || hdr.page }
+				else if (/^common /.test(l)) { nl = +g(l, "lineHeight"); nb = +g(l, "base"); h.sw = +g(l, "scaleW"); h.sh = +g(l, "scaleH") }
+				else if (/^info /.test(l)) { h.face = g(l, "face") || h.face; h.size = +g(l, "size") || h.size }
+				else if (/^page /.test(l)) { h.page = g(l, "file") || h.page }
 			});
-			if (Object.keys(n).length) { snap(); C = n; sel = +Object.keys(C)[0]; draw() }
-		};
+			if (!Object.keys(n).length) return false;
+			C = n; lh = nl; base = nb; hdr = h; sel = +Object.keys(C)[0];
+			if (hdr.page) { const dir = basePath ? basePath.replace(/[^/]*$/, "") : ""; img.onload = draw; img.src = dir + hdr.page }
+			else draw();
+			return true
+		}
+		$("load").onclick = () => { snap(); if (parseFnt($("fnt").value)) draw(); else drop() };
 		$("png").onchange = e => { const f = e.target.files[0]; if (!f) return; hdr.page = f.name; img.onload = () => { hdr.sw = img.width; hdr.sh = img.height; draw() }; img.src = URL.createObjectURL(f) };
-		img.onload = draw; img.src = IMG; draw();
+		img.onload = draw;
+		fetch(FONT).then(r => r.ok ? r.text() : Promise.reject(r.status)).then(t => { $("fnt").value = t; parseFnt(t, FONT) }).catch(e => console.error("Failed to load font", FONT, e));
 	</script>
 </body>
 
