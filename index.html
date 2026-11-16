@@ -510,7 +510,7 @@
 			hist.push(st); fut = []; pend = st; if (hist.length > 60) hist.shift()
 		}
 		function drop() { if (pend !== null) { hist.pop(); pend = null } }
-		function restore(st) { const o = JSON.parse(st); C = o.C; base = o.base; lh = o.lh; lastKey = null; pend = null; if (!C[sel]) sel = +Object.keys(C)[0]; draw() }
+		function restore(st) { const o = JSON.parse(st); C = o.C; base = o.base; lh = o.lh; lastKey = null; pend = null; if (!C[sel]) sel = C[65] ? 65 : +Object.keys(C)[0]; draw() }
 		function undo() { const st = hist.pop(); if (!st) return; fut.push(state()); restore(st) }
 		function redo() { const st = fut.pop(); if (!st) return; hist.push(state()); restore(st) }
 		function grid() { $("grid").innerHTML = ""; Object.keys(C).forEach(k => { const b = document.createElement("button"); b.textContent = glyphName(k); b.className = (bad.has(k) ? "bad " : "") + (k == sel ? "on" : ""); b.title = "id " + k; b.onclick = () => { sel = +k; draw() }; $("grid").appendChild(b) }) }
@@ -664,7 +664,7 @@
 				else if (/^page /.test(l)) { h.page = g(l, "file") || h.page }
 			});
 			if (!Object.keys(n).length) return false;
-			C = n; lh = nl; base = nb; hdr = h; sel = +Object.keys(C)[0];
+			C = n; lh = nl; base = nb; hdr = h; sel = C[65] ? 65 : +Object.keys(C)[0];
 			if (hdr.page && !skipImg) { const dir = basePath ? basePath.replace(/[^/]*$/, "") : ""; img.onload = draw; img.src = dir + hdr.page }
 			else draw();
 			return true
