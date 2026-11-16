@@ -422,8 +422,6 @@
 	<header>
 		<h1>fntValid<span id="fname"></span></h1>
 		<span class="pill" id="sum"></span>
-		<button id="undo" title="Ctrl/Cmd+Z">Undo</button>
-		<button id="redo" title="Ctrl/Cmd+Shift+Z">Redo</button>
 		<button id="theme">Theme</button>
 	</header>
 	<main>
@@ -458,7 +456,7 @@
 				<option value="all">all</option>
 				<option value="up">A-Z</option>
 				<option value="low">a-z</option>
-				<option value="desc">descenders g j p q y</option>
+				<option value="desc">descenders (from dset)</option>
 				<option value="nodesc">a-z no descenders</option>
 				<option value="dig">0-9</option>
 				<option value="pun">punctuation</option>
@@ -473,8 +471,10 @@
 			<label>descenders <input id="dset" value="gjpqy" size="6"></label>
 			<label>top gap <input type="number" id="top" value="0"></label>
 			<label>bottom gap <input type="number" id="gap" value="0"></label>
-			<div class="btns"><button class="pri" id="fix"
-					title="Snap baseline and descenders, apply top gap, fit lineHeight">Auto-fix</button></div>
+			<div class="btns">
+				<button class="pri" id="fix"
+					title="Snap baseline and descenders, apply top gap, fit lineHeight">Auto-fix</button>
+			</div>
 			<div id="chk"></div>
 		</div>
 
@@ -491,267 +491,820 @@
 			</div>
 			<p class="mut" id="hint">Drop a .fnt and/or its .png anywhere on this page, or open both together.</p>
 			<div class="btns" style="margin-top:8px">
-				<button class="pri" id="demo1">Load Demo 1 (Super12)</button>
-				<button class="pri" id="demo2">Load Demo 2 (Venice16)</button>
-				<button class="pri" id="demo3">Load Demo 3 (lsans-15)</button>
+				<button class="pri" id="demo1">Super12</button>
+				<button class="pri" id="demo2">Venice16</button>
+				<button class="pri" id="demo3">Ref16</button>
+				<button class="pri" id="demo4">lsans-15</button>
 			</div>
 		</div>
 	</main>
+
 	<script>
-		let C = {}, hdr = { face: "", size: 0, sw: 0, sh: 0, page: "" }, lh = 0, base = 0, sel = 65, img = new Image, bad = new Set, hist = [], fut = [], lastKey = null, lastT = 0, pend = null, infoExtra = {}, commonExtra = {}, pageLines = [], kerningLines = [];
-		const $ = i => document.getElementById(i), css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-		const L = c => String.fromCharCode(c);
-		const glyphName = k => k == 32 ? "␣" : L(+k);
-		const state = () => JSON.stringify({ C, base, lh });
-		function snap(key) {
-			const now = Date.now(), st = state(); pend = null;
-			if (key && key === lastKey && now - lastT < 800) { lastT = now; fut = []; return }
-			lastKey = key || null; lastT = now;
-			if (hist[hist.length - 1] === st) return;
-			hist.push(st); fut = []; pend = st; if (hist.length > 60) hist.shift()
-		}
-		function drop() { if (pend !== null) { hist.pop(); pend = null } }
-		function restore(st) { const o = JSON.parse(st); C = o.C; base = o.base; lh = o.lh; lastKey = null; pend = null; if (!C[sel]) sel = C[65] ? 65 : +Object.keys(C)[0]; draw() }
-		function undo() { const st = hist.pop(); if (!st) return; fut.push(state()); restore(st) }
-		function redo() { const st = fut.pop(); if (!st) return; hist.push(state()); restore(st) }
-		function grid() { $("grid").innerHTML = ""; Object.keys(C).forEach(k => { const b = document.createElement("button"); b.textContent = glyphName(k); b.className = (bad.has(k) ? "bad " : "") + (k == sel ? "on" : ""); b.title = "id " + k; b.onclick = () => { sel = +k; draw() }; $("grid").appendChild(b) }) }
-		function ctxOf(c, w, h) { c.width = w; c.height = h; const x = c.getContext("2d"); x.imageSmoothingEnabled = false; return x }
-		function anat() {
-			const c = C[sel], Z = 28, W = 24 * Z, H = (lh + 3) * Z, x = ctxOf($("anat"), W, H), ox = 4 * Z, oy = Z;
-			x.fillStyle = css("--card"); x.fillRect(0, 0, W, H);
-			x.fillStyle = "rgba(120,120,200,.12)"; x.fillRect(ox, oy, c.xa * Z, lh * Z);
-			x.drawImage(img, c.x, c.y, c.w, c.h, ox + c.xo * Z, oy + c.yo * Z, c.w * Z, c.h * Z);
-			x.setLineDash([4, 3]); x.strokeStyle = css("--mut"); x.strokeRect(ox + c.xo * Z + .5, oy + c.yo * Z + .5, c.w * Z, c.h * Z); x.setLineDash([]);
-			const hl = (y, col, parts) => { x.strokeStyle = col; x.lineWidth = 2; x.beginPath(); x.moveTo(Z, oy + y * Z); x.lineTo(W - Z, oy + y * Z); x.stroke(); let px = W - Z * 9, py = oy + y * Z - 3; x.font = "12px system-ui"; parts.forEach(p => { x.fillStyle = p.col; x.fillText(p.t, px, py); px += x.measureText(p.t).width }) };
-			const bottom = c.yo + c.h;
-			const guides = [{ y: 0, n: "top", v: 0, col: css("--r") }, { y: base, n: "base", v: base, col: css("--g") }, { y: lh, n: "lineHeight", v: lh, col: css("--b") }, { y: bottom, n: "bottom", v: bottom, col: css("--o") }];
-			const gs = [];
-			guides.forEach(g => { const o = gs.find(e => e.y === g.y); if (o) o.items.push(g); else gs.push({ y: g.y, v: g.v, items: [g] }) });
-			gs.forEach(g => {
-				const lcol = g.items.length > 1 ? (g.items.find(i => i.n === "base") || g.items[0]).col : g.items[0].col;
-				const parts = []; g.items.forEach((it, i) => { if (i) parts.push({ t: ", ", col: it.col }); parts.push({ t: it.n, col: it.col }) }); parts.push({ t: " " + g.v, col: lcol });
-				hl(g.y, lcol, parts);
-			});
-			x.strokeStyle = css("--p"); x.lineWidth = 2; x.beginPath(); x.moveTo(ox + c.xa * Z, oy); x.lineTo(ox + c.xa * Z, oy + lh * Z); x.stroke();
-			const d = bottom - base;
-			$("vb").textContent = base; $("vl").textContent = lh; $("vbot").textContent = bottom; $("xa").textContent = c.xa;
-			$("vbd").textContent = d ? (d > 0 ? `+${d}px ` : `${d}px `) : "";
-			$("vbd").className = d ? "warn" : "good";
-			$("anaInfo").innerHTML = `<b style="font-size:1.6em">“${L(sel)}”</b> <span class="mut">id ${sel}</span>`;
-		}
-		function atl() {
-			const Z = 4, x = ctxOf($("atlas"), hdr.sw * Z, hdr.sh * Z); x.fillStyle = css("--card"); x.fillRect(0, 0, x.canvas.width, x.canvas.height); x.drawImage(img, 0, 0, hdr.sw * Z, hdr.sh * Z);
-			x.fillStyle = "rgba(217,58,58,.28)"; bad.forEach(k => { const c = C[k]; if (c) x.fillRect(c.x * Z, c.y * Z, c.w * Z, c.h * Z) });
-			const c = C[sel]; x.strokeStyle = css("--acc"); x.lineWidth = 2; x.strokeRect(c.x * Z, c.y * Z, c.w * Z, c.h * Z)
-		}
-		function sync() {
-			const c = C[sel]; $("iyo").value = c.yo; $("ixo").value = c.xo; $("ixa").value = c.xa; $("ibase").value = base; $("ilh").value = lh;
-			$("selinfo").textContent = `id ${sel} “${L(sel)}” ${c.w}×${c.h} @ ${c.x},${c.y}`; $("fname").textContent = `${hdr.face} · ${hdr.size}px`
-		}
-		function checks() {
-			const ds = $("dset").value, isD = s => ds.includes(s), al = s => /[A-Za-z0-9]/.test(s), bt = c => c.yo + c.h;
-			const R = [["Above top", c => c.yo < 0, "yoffset < 0"],
-			["Not on baseline", (c, s) => al(s) && !isD(s) && bt(c) !== base, "bottom ≠ base"],
-			["Descender too high", (c, s) => isD(s) && bt(c) <= base, "tail ≤ base"],
-			["Past lineHeight", c => bt(c) > lh, "overflows line box"],
-			["Outside atlas", c => c.x < 0 || c.y < 0 || c.x + c.w > hdr.sw || c.y + c.h > hdr.sh, "leaves PNG"],
-			["Advance too small", c => c.xa < c.xo + c.w, "wider than advance"]];
-			const out = $("chk"); bad = new Set; out.innerHTML = ""; let fails = 0;
-			const row = (ok, t, h, cnt, keys) => {
-				if (!ok) fails++;
-				const d = document.createElement("div"); d.className = "chk " + (ok ? "ok" : "no");
-				d.innerHTML = `<p><span class="ic">${ok ? "✓" : "✗"}</span><span class="t">${t}</span><span class="mut">${h}</span>${cnt == null ? "" : `<span class="cnt" style="color:var(${ok ? "--g" : "--r"})">${cnt}</span>`}</p>`;
-				if (keys && keys.length) { const w = document.createElement("div"); w.className = "chips"; keys.forEach(k => { const b = document.createElement("button"); b.textContent = glyphName(k); b.className = k == sel ? "on" : ""; b.onclick = () => { sel = +k; draw() }; w.appendChild(b) }); d.appendChild(w) }
-				out.appendChild(d)
-			};
-			R.forEach(([t, f, h]) => { const b = Object.keys(C).filter(k => f(C[k], L(+k))); b.forEach(k => bad.add(k)); row(!b.length, t, h, b.length, b) });
-			const v = Object.values(C);
-			if (v.length) {
-				const minY = Math.min(...v.map(c => c.yo)), maxB = Math.max(...v.map(c => c.yo + c.h));
-				const top = +$("top").value, gap = +$("gap").value;
-				row(minY === top, "Top edge aligned", minY === top ? "highest glyph at top gap" : `highest glyph at top gap · expected ${top}, got ${minY}`);
-				row(lh === maxB + gap, "Line height fits", lh === maxB + gap ? "lowest glyph + bottom gap" : `lowest glyph + bottom gap · expected ${maxB + gap}, got ${lh}`);
-			}
-			const s = $("sum"); s.textContent = bad.size ? `${bad.size}/${Object.keys(C).length} glyphs flagged` : (fails ? "line box needs a fix" : "All checks pass"); s.className = "pill" + (fails ? "" : " ok")
-		}
-		function modeOf(a) { const m = {}; a.forEach(v => m[v] = (m[v] || 0) + 1); const t = Object.entries(m).sort((a, b) => b[1] - a[1])[0]; return t ? +t[0] : null }
-		function autoFix() {
-			snap();
-			const ds = $("dset").value, top = +$("top").value, gap = +$("gap").value;
-			const keys = Object.keys(C);
-			const flat = k => { const s = L(+k); return /[A-Za-z0-9]/.test(s) && !ds.includes(s) };
-			const b0 = modeOf(keys.filter(flat).map(k => C[k].yo + C[k].h));
-			if (b0 == null) { drop(); return }
-			keys.filter(flat).forEach(k => { C[k].yo = b0 - C[k].h });
-			const xTop = modeOf(keys.filter(k => flat(k) && /[a-z]/.test(L(+k))).map(k => C[k].yo));
-			if (xTop != null) {
-				keys.forEach(k => {
-					const s = L(+k);
-					if (!/[A-Za-z]/.test(s) || !ds.includes(s)) return;
-					if (s === "j" && C[105]) C[k].yo = C[105].yo;
-					else C[k].yo = xTop;
-				});
-			}
-			const dy = top - Math.min(...keys.map(k => C[k].yo));
-			keys.forEach(k => { C[k].yo += dy }); base = b0 + dy;
-			lh = Math.max(...keys.map(k => C[k].yo + C[k].h)) + gap;
-			draw();
-		}
-		$("fix").onclick = autoFix;
-		$("dset").oninput = draw; $("top").oninput = checks; $("gap").oninput = checks;
-		const hasChars = () => Object.keys(C).length > 0;
-		function draw() {
-			if (pend !== null && state() === pend) { hist.pop(); fut = []; }
-			pend = null;
-			$("undo").disabled = !hist.length; $("redo").disabled = !fut.length;
-			if (!hasChars()) {
-				$("sum").textContent = "No font loaded";
-				$("sum").className = "pill";
-				$("chk").innerHTML = "";
-				$("grid").innerHTML = "";
-				$("selinfo").textContent = "Load a .fnt + .png, or use a demo.";
-				$("anaInfo").innerHTML = "";
-				$("vb").textContent = ""; $("vl").textContent = ""; $("vbot").textContent = ""; $("xa").textContent = ""; $("vbd").textContent = "";
-				document.querySelector(".overlay-top").style.display = "none";
-				document.querySelector(".overlay-bottom").style.display = "none";
-				$("atlas").getContext("2d").clearRect(0, 0, $("atlas").width, $("atlas").height);
-				$("anat").getContext("2d").clearRect(0, 0, $("anat").width, $("anat").height);
+		// =====================================================================
+		// STATE
+		// =====================================================================
+
+		/** charCode -> { x, y, w, h, xo, yo, xa }  (atlas rect + offsets) */
+		let glyphs = {};
+
+		/** Font header fields from the "info", "common", and "page" lines. */
+		let header = { face: "", size: 0, scaleW: 0, scaleH: 0, pageFile: "" };
+
+		/** Baseline y and line height, in glyph space. */
+		let baseline = 0;
+		let lineHeight = 0;
+
+		/** Currently selected char code (65 = 'A' by default). */
+		let selectedCode = 65;
+
+		/** The atlas PNG. */
+		let atlasImage = new Image();
+
+		/** Char codes (numbers) that fail at least one check. */
+		let badChars = new Set();
+
+		/** Raw lines preserved verbatim for round-trip export. */
+		let extraInfoAttrs = {};
+		let extraCommonAttrs = {};
+		let pageLines = [];
+		let kerningLines = [];
+
+		const $ = id => document.getElementById(id);
+		const cssVar = name =>
+			getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+		const charFromCode = code => String.fromCharCode(code);
+		const glyphLabel = code => code === 32 ? "\u2423" : charFromCode(code);
+		const hasGlyphs = () => Object.keys(glyphs).length > 0;
+
+		// =====================================================================
+		// RENDERING
+		// =====================================================================
+
+		/** Orchestrates a full redraw. Each step is in its own function below. */
+		function redrawAll() {
+			if (!hasGlyphs()) {
+				showEmptyState();
 				return;
 			}
+			showOverlays();
+			runChecks();
+			renderGlyphGrid();
+			syncFormFields();
+			drawGlyphAnatomy();
+			drawAtlasOverview();
+		}
+
+		function showEmptyState() {
+			const summary = $("sum");
+			summary.textContent = "No font loaded";
+			summary.className = "pill";
+
+			$("chk").innerHTML = "";
+			$("grid").innerHTML = "";
+			$("selinfo").textContent = "Load a .fnt + .png, or use a demo.";
+			$("anaInfo").innerHTML = "";
+			$("vb").textContent = "";
+			$("vl").textContent = "";
+			$("vbot").textContent = "";
+			$("xa").textContent = "";
+			$("vbd").textContent = "";
+
+			document.querySelector(".overlay-top").style.display = "none";
+			document.querySelector(".overlay-bottom").style.display = "none";
+
+			$("atlas").getContext("2d").clearRect(0, 0, $("atlas").width, $("atlas").height);
+			$("anat").getContext("2d").clearRect(0, 0, $("anat").width, $("anat").height);
+		}
+
+		function showOverlays() {
 			document.querySelector(".overlay-top").style.display = "";
 			document.querySelector(".overlay-bottom").style.display = "";
-			checks(); grid(); sync(); anat(); atl()
 		}
-		const edit = (fn, k) => e => { if (!hasChars()) return; snap(typeof k == "function" ? k() : k); fn(e); draw() };
-		$("iyo").oninput = edit(e => C[sel].yo = +e.target.value, () => "yo" + sel); $("ixo").oninput = edit(e => C[sel].xo = +e.target.value, () => "xo" + sel); $("ixa").oninput = edit(e => C[sel].xa = +e.target.value, () => "xa" + sel);
-		$("ibase").oninput = edit(e => base = +e.target.value, "base"); $("ilh").oninput = edit(e => lh = +e.target.value, "lh");
-		$("apply").onclick = () => { if (!hasChars()) return; snap(); const f = G[$("grp").value], d = +$("dy").value; Object.keys(C).forEach(k => { if (f(L(+k))) C[k].yo += d }); draw() };
-		$("undo").onclick = undo; $("redo").onclick = redo;
-		$("theme").onclick = () => { const r = document.documentElement, dark = r.dataset.theme ? r.dataset.theme === "dark" : matchMedia("(prefers-color-scheme:dark)").matches; r.dataset.theme = dark ? "light" : "dark"; draw() };
-		const G = { all: () => 1, up: s => /[A-Z]/.test(s), low: s => /[a-z]/.test(s), desc: s => /[gjpqy]/.test(s), nodesc: s => /[a-z]/.test(s) && !/[gjpqy]/.test(s), dig: s => /[0-9]/.test(s), pun: s => /[^A-Za-z0-9 ]/.test(s) };
-		/* apply handler set above */
-		$("atlas").onclick = e => {
-			if (!hasChars()) return;
-			const r = e.target.getBoundingClientRect(), px = (e.clientX - r.left) / r.width * hdr.sw, py = (e.clientY - r.top) / r.height * hdr.sh;
-			const k = Object.keys(C).find(k => { const c = C[k]; return px >= c.x && px < c.x + c.w && py >= c.y && py < c.y + c.h }); if (k) { sel = +k; draw() }
-		};
-		addEventListener("keydown", e => {
-			if ((e.ctrlKey || e.metaKey) && !/TEXTAREA/.test(e.target.tagName)) {
-				const k = e.key.toLowerCase();
-				if (k === "z") { e.preventDefault(); e.shiftKey ? redo() : undo(); return }
-				if (k === "y") { e.preventDefault(); redo(); return }
+
+		function makeCanvasContext(canvasEl, width, height) {
+			canvasEl.width = width;
+			canvasEl.height = height;
+			const ctx = canvasEl.getContext("2d");
+			ctx.imageSmoothingEnabled = false;
+			return ctx;
+		}
+
+		function drawGlyphAnatomy() {
+			const glyph = glyphs[selectedCode];
+			const ZOOM = 28;
+			const W = 24 * ZOOM;
+			const H = (lineHeight + 3) * ZOOM;
+
+			const ctx = makeCanvasContext($("anat"), W, H);
+			const originX = 4 * ZOOM;
+			const originY = 1 * ZOOM;
+
+			ctx.fillStyle = cssVar("--card");
+			ctx.fillRect(0, 0, W, H);
+
+			// faint advance × lineHeight box
+			ctx.fillStyle = "rgba(120,120,200,.12)";
+			ctx.fillRect(originX, originY, glyph.xa * ZOOM, lineHeight * ZOOM);
+
+			// scaled-up glyph
+			ctx.drawImage(
+				atlasImage,
+				glyph.x, glyph.y, glyph.w, glyph.h,
+				originX + glyph.xo * ZOOM,
+				originY + glyph.yo * ZOOM,
+				glyph.w * ZOOM,
+				glyph.h * ZOOM
+			);
+
+			// dashed bounding box
+			ctx.setLineDash([4, 3]);
+			ctx.strokeStyle = cssVar("--mut");
+			ctx.strokeRect(
+				originX + glyph.xo * ZOOM + 0.5,
+				originY + glyph.yo * ZOOM + 0.5,
+				glyph.w * ZOOM,
+				glyph.h * ZOOM
+			);
+			ctx.setLineDash([]);
+
+			const glyphBottom = glyph.yo + glyph.h;
+
+			const drawGuide = (yInGlyphSpace, color, labelParts) => {
+				ctx.strokeStyle = color;
+				ctx.lineWidth = 2;
+				ctx.beginPath();
+				ctx.moveTo(ZOOM, originY + yInGlyphSpace * ZOOM);
+				ctx.lineTo(W - ZOOM, originY + yInGlyphSpace * ZOOM);
+				ctx.stroke();
+
+				let px = W - ZOOM * 9;
+				let py = originY + yInGlyphSpace * ZOOM - 3;
+				ctx.font = "12px system-ui";
+				for (const part of labelParts) {
+					ctx.fillStyle = part.col;
+					ctx.fillText(part.t, px, py);
+					px += ctx.measureText(part.t).width;
+				}
+			};
+
+			// guides, merged when they share the same y
+			const guides = [
+				{ y: 0, name: "top", value: 0, col: cssVar("--r") },
+				{ y: baseline, name: "base", value: baseline, col: cssVar("--g") },
+				{ y: lineHeight, name: "lineHeight", value: lineHeight, col: cssVar("--b") },
+				{ y: glyphBottom, name: "bottom", value: glyphBottom, col: cssVar("--o") },
+			];
+
+			const mergedGuides = [];
+			for (const g of guides) {
+				const sameY = mergedGuides.find(m => m.y === g.y);
+				if (sameY) sameY.items.push(g);
+				else mergedGuides.push({ y: g.y, value: g.value, items: [g] });
 			}
-			if (/INPUT|TEXTAREA|SELECT/.test(e.target.tagName) || !hasChars()) return; const ks = Object.keys(C).map(Number), i = ks.indexOf(sel);
-			if (e.key == "ArrowRight") sel = ks[Math.min(ks.length - 1, i + 1)]; else if (e.key == "ArrowLeft") sel = ks[Math.max(0, i - 1)];
-			else if (e.key == "ArrowUp") { snap("nudge" + sel); C[sel].yo-- } else if (e.key == "ArrowDown") { snap("nudge" + sel); C[sel].yo++ } else return; e.preventDefault(); draw()
-		});
-		function fmtAttrs(tag, obj, order) {
-			const keys = order ? [...order, ...Object.keys(obj).filter(k => !order.includes(k))] : Object.keys(obj);
+
+			for (const group of mergedGuides) {
+				const lineColor = group.items.length > 1
+					? (group.items.find(i => i.name === "base") || group.items[0]).col
+					: group.items[0].col;
+
+				const parts = [];
+				group.items.forEach((it, i) => {
+					if (i) parts.push({ t: ", ", col: it.col });
+					parts.push({ t: it.name, col: it.col });
+				});
+				parts.push({ t: " " + group.value, col: lineColor });
+
+				drawGuide(group.y, lineColor, parts);
+			}
+
+			// vertical xadvance line
+			ctx.strokeStyle = cssVar("--p");
+			ctx.lineWidth = 2;
+			ctx.beginPath();
+			ctx.moveTo(originX + glyph.xa * ZOOM, originY);
+			ctx.lineTo(originX + glyph.xa * ZOOM, originY + lineHeight * ZOOM);
+			ctx.stroke();
+
+			// side readouts
+			const descenderDepth = glyphBottom - baseline;
+			$("vb").textContent = baseline;
+			$("vl").textContent = lineHeight;
+			$("vbot").textContent = glyphBottom;
+			$("xa").textContent = glyph.xa;
+			$("vbd").textContent = descenderDepth
+				? (descenderDepth > 0 ? `+${descenderDepth}px ` : `${descenderDepth}px `)
+				: "";
+			$("vbd").className = descenderDepth ? "warn" : "good";
+			$("anaInfo").innerHTML =
+				`<b style="font-size:1.6em">\u201C${charFromCode(selectedCode)}\u201D</b> ` +
+				`<span class="mut">id ${selectedCode}</span>`;
+		}
+
+		function drawAtlasOverview() {
+			const ZOOM = 4;
+			const ctx = makeCanvasContext($("atlas"), header.scaleW * ZOOM, header.scaleH * ZOOM);
+
+			ctx.fillStyle = cssVar("--card");
+			ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+			ctx.drawImage(atlasImage, 0, 0, header.scaleW * ZOOM, header.scaleH * ZOOM);
+
+			// red tint over failing glyphs
+			ctx.fillStyle = "rgba(217,58,58,.28)";
+			badChars.forEach(code => {
+				const g = glyphs[code];
+				if (g) ctx.fillRect(g.x * ZOOM, g.y * ZOOM, g.w * ZOOM, g.h * ZOOM);
+			});
+
+			// accent outline on selected
+			const sel = glyphs[selectedCode];
+			ctx.strokeStyle = cssVar("--acc");
+			ctx.lineWidth = 2;
+			ctx.strokeRect(sel.x * ZOOM, sel.y * ZOOM, sel.w * ZOOM, sel.h * ZOOM);
+		}
+
+		function renderGlyphGrid() {
+			const container = $("grid");
+			container.innerHTML = "";
+
+			for (const codeStr of Object.keys(glyphs)) {
+				const code = Number(codeStr);
+				const btn = document.createElement("button");
+				btn.textContent = glyphLabel(code);
+				btn.className =
+					(badChars.has(code) ? "bad " : "") +
+					(code === selectedCode ? "on" : "");
+				btn.title = `id ${code}`;
+				btn.onclick = () => { selectedCode = code; redrawAll(); };
+				container.appendChild(btn);
+			}
+		}
+
+		function syncFormFields() {
+			const glyph = glyphs[selectedCode];
+			$("iyo").value = glyph.yo;
+			$("ixo").value = glyph.xo;
+			$("ixa").value = glyph.xa;
+			$("ibase").value = baseline;
+			$("ilh").value = lineHeight;
+
+			$("selinfo").textContent =
+				`id ${selectedCode} \u201C${charFromCode(selectedCode)}\u201D ` +
+				`${glyph.w}\u00D7${glyph.h} @ ${glyph.x},${glyph.y}`;
+			$("fname").textContent = `${header.face} \u00B7 ${header.size}px`;
+		}
+
+		// =====================================================================
+		// CHECKS
+		// =====================================================================
+
+		function runChecks() {
+			const descenderChars = $("dset").value;
+			const isDescender = ch => descenderChars.includes(ch);
+			const isAlnum = ch => /[A-Za-z0-9]/.test(ch);
+			const glyphBottom = g => g.yo + g.h;
+
+			const rules = [
+				{
+					label: "Above top",
+					hint: "yoffset < 0",
+					test: g => g.yo < 0,
+				},
+				{
+					label: "Not on baseline",
+					hint: "bottom \u2260 base",
+					test: (g, ch) =>
+						isAlnum(ch) && !isDescender(ch) && glyphBottom(g) !== baseline,
+				},
+				{
+					label: "Descender too high",
+					hint: "tail \u2264 base",
+					test: (g, ch) => isDescender(ch) && glyphBottom(g) <= baseline,
+				},
+				{
+					label: "Past lineHeight",
+					hint: "overflows line box",
+					test: g => glyphBottom(g) > lineHeight,
+				},
+				{
+					label: "Outside atlas",
+					hint: "leaves PNG",
+					test: g =>
+						g.x < 0 || g.y < 0 ||
+						g.x + g.w > header.scaleW ||
+						g.y + g.h > header.scaleH,
+				},
+				{
+					label: "Advance too small",
+					hint: "wider than advance",
+					test: g => g.xa < g.xo + g.w,
+				},
+			];
+
+			const resultsEl = $("chk");
+			resultsEl.innerHTML = "";
+			badChars = new Set();
+			let totalFailingRules = 0;
+
+			const renderRow = (pass, label, hint, count, failingCodes) => {
+				if (!pass) totalFailingRules++;
+
+				const row = document.createElement("div");
+				row.className = "chk " + (pass ? "ok" : "no");
+				row.innerHTML =
+					`<p><span class="ic">${pass ? "\u2713" : "\u2717"}</span>` +
+					`<span class="t">${label}</span>` +
+					`<span class="mut">${hint}</span>` +
+					(count == null ? "" :
+						`<span class="cnt" style="color:var(${pass ? "--g" : "--r"})">${count}</span>`) +
+					`</p>`;
+
+				if (failingCodes && failingCodes.length) {
+					const chips = document.createElement("div");
+					chips.className = "chips";
+					for (const code of failingCodes) {
+						const b = document.createElement("button");
+						b.textContent = glyphLabel(code);
+						b.className = code === selectedCode ? "on" : "";
+						b.onclick = () => { selectedCode = code; redrawAll(); };
+						chips.appendChild(b);
+					}
+					row.appendChild(chips);
+				}
+				resultsEl.appendChild(row);
+			};
+
+			for (const rule of rules) {
+				const failingCodes = Object.keys(glyphs)
+					.map(Number)
+					.filter(code => rule.test(glyphs[code], charFromCode(code)));
+				for (const code of failingCodes) badChars.add(code);
+				renderRow(
+					failingCodes.length === 0,
+					rule.label,
+					rule.hint,
+					failingCodes.length,
+					failingCodes
+				);
+			}
+
+			// two global checks
+			const allGlyphs = Object.values(glyphs);
+			if (allGlyphs.length) {
+				const desiredTopGap = Number($("top").value);
+				const desiredBotGap = Number($("gap").value);
+
+				const highestY = Math.min(...allGlyphs.map(g => g.yo));
+				const lowestBottom = Math.max(...allGlyphs.map(g => g.yo + g.h));
+
+				renderRow(
+					highestY === desiredTopGap,
+					"Top edge aligned",
+					highestY === desiredTopGap
+						? "highest glyph at top gap"
+						: `highest glyph at top gap \u00B7 expected ${desiredTopGap}, got ${highestY}`
+				);
+
+				renderRow(
+					lineHeight === lowestBottom + desiredBotGap,
+					"Line height fits",
+					lineHeight === lowestBottom + desiredBotGap
+						? "lowest glyph + bottom gap"
+						: `lowest glyph + bottom gap \u00B7 expected ${lowestBottom + desiredBotGap}, got ${lineHeight}`
+				);
+			}
+
+			const pill = $("sum");
+			pill.textContent = badChars.size
+				? `${badChars.size}/${Object.keys(glyphs).length} glyphs flagged`
+				: (totalFailingRules ? "line box needs a fix" : "All checks pass");
+			pill.className = "pill" + (totalFailingRules ? "" : " ok");
+		}
+
+		// =====================================================================
+		// AUTO-FIX
+		// =====================================================================
+
+		function mostCommonValue(values) {
+			const counts = {};
+			for (const v of values) counts[v] = (counts[v] || 0) + 1;
+			const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+			return top ? Number(top[0]) : null;
+		}
+
+		function autoFix() {
+			const descenderChars = $("dset").value;
+			const topGap = Number($("top").value);
+			const bottomGap = Number($("gap").value);
+			const codes = Object.keys(glyphs).map(Number);
+
+			const isFlat = code => {
+				const ch = charFromCode(code);
+				return /[A-Za-z0-9]/.test(ch) && !descenderChars.includes(ch);
+			};
+
+			// 1. Snap flat glyphs to a common baseline.
+			const commonBottom = mostCommonValue(
+				codes.filter(isFlat).map(code => glyphs[code].yo + glyphs[code].h)
+			);
+			if (commonBottom == null) return;
+			codes.filter(isFlat).forEach(code => {
+				glyphs[code].yo = commonBottom - glyphs[code].h;
+			});
+
+			// 2. Snap letter-glyph tops to the lowercase non-descender top.
+			const letterTop = mostCommonValue(
+				codes
+					.filter(code => isFlat(code) && /[a-z]/.test(charFromCode(code)))
+					.map(code => glyphs[code].yo)
+			);
+			if (letterTop != null) {
+				codes.forEach(code => {
+					const ch = charFromCode(code);
+					if (!/[A-Za-z]/.test(ch) || !descenderChars.includes(ch)) return;
+					if (ch === "j" && glyphs[105]) glyphs[code].yo = glyphs[105].yo; // match i
+					else glyphs[code].yo = letterTop;
+				});
+			}
+
+			// 3. Shift so the highest glyph lands at topGap.
+			const highestY = Math.min(...codes.map(code => glyphs[code].yo));
+			const shift = topGap - highestY;
+			codes.forEach(code => { glyphs[code].yo += shift; });
+			baseline = commonBottom + shift;
+
+			// 4. Fit lineHeight.
+			lineHeight =
+				Math.max(...codes.map(code => glyphs[code].yo + glyphs[code].h)) + bottomGap;
+
+			redrawAll();
+		}
+
+		// =====================================================================
+		// EXPORT
+		// =====================================================================
+
+		function formatAttributes(tag, obj, preferredOrder) {
+			const keys = preferredOrder
+				? [...preferredOrder, ...Object.keys(obj).filter(k => !preferredOrder.includes(k))]
+				: Object.keys(obj);
+
 			return tag + keys.map(k => {
-				const v = obj[k]; if (v == null || v === "") return null;
-				return " " + k + "=" + (/[\s"]/.test(String(v)) ? `"${String(v).replace(/"/g, "")}"` : v);
-			}).filter(Boolean).join("")
+				const v = obj[k];
+				if (v == null || v === "") return null;
+				const needsQuotes = /[\s"]/.test(String(v));
+				return " " + k + "=" +
+					(needsQuotes ? `"${String(v).replace(/"/g, "")}"` : v);
+			}).filter(Boolean).join("");
 		}
-		function out() {
-			const info = { ...infoExtra, face: hdr.face, size: hdr.size };
-			const pages = pageLines.length ? pageLines : [`page id=0 file="${hdr.page}"`];
-			const common = { ...commonExtra, lineHeight: lh, base: base, scaleW: hdr.sw, scaleH: hdr.sh, pages: pages.length };
-			let s = fmtAttrs("info", info, ["face", "size"]) + "\n" + fmtAttrs("common", common, ["lineHeight", "base", "scaleW", "scaleH", "pages"]) + "\n";
-			pages.forEach(p => { s += p + "\n" });
-			s += `chars count=${Object.keys(C).length}\n`;
-			Object.keys(C).map(Number).sort((a, b) => a - b).forEach(n => {
-				const c = C[n];
-				const letter = n == 32 ? "space" : L(n);
-				s += `char id=${String(n).padEnd(3)} x=${String(c.x).padStart(3)} y=${String(c.y).padStart(3)} width=${String(c.w).padStart(2)} height=${String(c.h).padStart(2)} xoffset=${String(c.xo).padStart(2)} yoffset=${String(c.yo).padStart(2)} xadvance=${String(c.xa).padStart(2)} page=0 chnl=0 letter="${letter}"\n`;
-			});
+
+		function buildFntText() {
+			const info = { ...extraInfoAttrs, face: header.face, size: header.size };
+			const pages = pageLines.length
+				? pageLines
+				: [`page id=0 file="${header.pageFile}"`];
+			const common = {
+				...extraCommonAttrs,
+				lineHeight,
+				base: baseline,
+				scaleW: header.scaleW,
+				scaleH: header.scaleH,
+				pages: pages.length,
+			};
+
+			let out =
+				formatAttributes("info", info, ["face", "size"]) + "\n" +
+				formatAttributes("common", common, ["lineHeight", "base", "scaleW", "scaleH", "pages"]) + "\n";
+
+			pages.forEach(p => { out += p + "\n"; });
+
+			out += `chars count=${Object.keys(glyphs).length}\n`;
+			Object.keys(glyphs)
+				.map(Number)
+				.sort((a, b) => a - b)
+				.forEach(n => {
+					const g = glyphs[n];
+					const letter = n === 32 ? "space" : charFromCode(n);
+					out +=
+						`char id=${String(n).padEnd(3)} ` +
+						`x=${String(g.x).padStart(3)} ` +
+						`y=${String(g.y).padStart(3)} ` +
+						`width=${String(g.w).padStart(2)} ` +
+						`height=${String(g.h).padStart(2)} ` +
+						`xoffset=${String(g.xo).padStart(2)} ` +
+						`yoffset=${String(g.yo).padStart(2)} ` +
+						`xadvance=${String(g.xa).padStart(2)} ` +
+						`page=0 chnl=0 letter="${letter}"\n`;
+				});
+
 			if (kerningLines.length) {
-				s += `kernings count=${kerningLines.length}\n`;
-				kerningLines.forEach(k => { s += k + "\n" });
+				out += `kernings count=${kerningLines.length}\n`;
+				kerningLines.forEach(k => { out += k + "\n"; });
 			}
-			return s
+			return out;
 		}
-		$("exp").onclick = () => { $("fnt").value = out() }; $("cp").onclick = () => { $("fnt").value = out(); try { navigator.clipboard.writeText($("fnt").value) } catch (e) { $("fnt").select() } };
-		function parseFnt(t, basePath, skipImg) {
-			const n = {}, h = { ...hdr }; let nl = lh, nb = base;
-			const g = (s, k) => { const m = s.match(new RegExp("\\b" + k + '="?([^"\\s]*)"?')); return m ? m[1] : null };
-			const attrs = s => { const o = {}; s.replace(/(\w+)=("([^"]*)"|[^\s]+)/g, (_, k, _v, q) => { o[k] = q != null ? q : _v }); return o };
-			const ie = {}, ce = {}, pl = [], kl = [];
-			t.split(/\r?\n/).forEach(line => {
-				const l = line.trim(); if (!l) return;
-				if (/^char /.test(l)) { const id = +g(l, "id"); n[id] = { x: +g(l, "x"), y: +g(l, "y"), w: +g(l, "width"), h: +g(l, "height"), xo: +g(l, "xoffset"), yo: +g(l, "yoffset"), xa: +g(l, "xadvance") } }
-				else if (/^common /.test(l)) { const a = attrs(l); nl = +a.lineHeight; nb = +a.base; h.sw = +a.scaleW; h.sh = +a.scaleH; Object.assign(ce, a) }
-				else if (/^info /.test(l)) { const a = attrs(l); h.face = a.face || h.face; h.size = +a.size || h.size; Object.assign(ie, a) }
-				else if (/^page /.test(l)) { const a = attrs(l); h.page = a.file || h.page; pl.push(l) }
-				else if (/^kerning /.test(l)) { kl.push(l) }
+
+		// =====================================================================
+		// PARSER
+		// =====================================================================
+
+		function parseFnt(text, basePath, skipImageLoad) {
+			const parsedGlyphs = {};
+			const h = { ...header };
+			let parsedLineHeight = lineHeight;
+			let parsedBaseline = baseline;
+
+			const getAttr = (line, key) => {
+				const m = line.match(new RegExp("\\b" + key + '="?([^"\\s]*)"?'));
+				return m ? m[1] : null;
+			};
+
+			const parseAllAttrs = line => {
+				const o = {};
+				line.replace(/(\w+)=("([^"]*)"|[^\s]+)/g, (_, k, _v, quoted) => {
+					o[k] = quoted != null ? quoted : _v;
+				});
+				return o;
+			};
+
+			const info = {}, common = {}, pages = [], kernings = [];
+
+			text.split(/\r?\n/).forEach(rawLine => {
+				const line = rawLine.trim();
+				if (!line) return;
+
+				if (/^char /.test(line)) {
+					const id = Number(getAttr(line, "id"));
+					parsedGlyphs[id] = {
+						x: +getAttr(line, "x"),
+						y: +getAttr(line, "y"),
+						w: +getAttr(line, "width"),
+						h: +getAttr(line, "height"),
+						xo: +getAttr(line, "xoffset"),
+						yo: +getAttr(line, "yoffset"),
+						xa: +getAttr(line, "xadvance"),
+					};
+				} else if (/^common /.test(line)) {
+					const a = parseAllAttrs(line);
+					parsedLineHeight = +a.lineHeight;
+					parsedBaseline = +a.base;
+					h.scaleW = +a.scaleW;
+					h.scaleH = +a.scaleH;
+					Object.assign(common, a);
+				} else if (/^info /.test(line)) {
+					const a = parseAllAttrs(line);
+					h.face = a.face || h.face;
+					h.size = +a.size || h.size;
+					Object.assign(info, a);
+				} else if (/^page /.test(line)) {
+					const a = parseAllAttrs(line);
+					h.pageFile = a.file || h.pageFile;
+					pages.push(line);
+				} else if (/^kerning /.test(line)) {
+					kernings.push(line);
+				}
 			});
-			if (!Object.keys(n).length) return false;
-			C = n; lh = nl; base = nb; hdr = h; infoExtra = ie; commonExtra = ce; pageLines = pl; kerningLines = kl;
-			sel = C[65] ? 65 : +Object.keys(C)[0];
-			if (hdr.page && !skipImg) { const dir = basePath ? basePath.replace(/[^/]*$/, "") : ""; img.onload = draw; img.src = dir + hdr.page }
-			else draw();
-			return true
+
+			if (!Object.keys(parsedGlyphs).length) return false;
+
+			glyphs = parsedGlyphs;
+			lineHeight = parsedLineHeight;
+			baseline = parsedBaseline;
+			header = h;
+			extraInfoAttrs = info;
+			extraCommonAttrs = common;
+			pageLines = pages;
+			kerningLines = kernings;
+
+			selectedCode = glyphs[65] ? 65 : Number(Object.keys(glyphs)[0]);
+
+			if (header.pageFile && !skipImageLoad) {
+				const dir = basePath ? basePath.replace(/[^/]*$/, "") : "";
+				atlasImage.onload = redrawAll;
+				atlasImage.src = dir + header.pageFile;
+			} else {
+				redrawAll();
+			}
+			return true;
 		}
-		$("load").onclick = () => { snap(); if (parseFnt($("fnt").value)) draw(); else drop() };
-		let pendingFnt = null, pendingPng = null;
-		const loadImg = f => new Promise(res => {
-			img.onload = () => { hdr.sw = img.width; hdr.sh = img.height; res() };
-			img.src = URL.createObjectURL(f);
+
+		// =====================================================================
+		// EVENT HANDLERS
+		// =====================================================================
+
+		/** Editors that mutate a single glyph field or the baseline/lineHeight. */
+		function bindNumericInput(id, applyFn) {
+			$(id).oninput = event => {
+				if (!hasGlyphs()) return;
+				applyFn(event);
+				redrawAll();
+			};
+		}
+
+		bindNumericInput("iyo", e => { glyphs[selectedCode].yo = +e.target.value; });
+		bindNumericInput("ixo", e => { glyphs[selectedCode].xo = +e.target.value; });
+		bindNumericInput("ixa", e => { glyphs[selectedCode].xa = +e.target.value; });
+		bindNumericInput("ibase", e => { baseline = +e.target.value; });
+		bindNumericInput("ilh", e => { lineHeight = +e.target.value; });
+
+		// Bulk-shift Δy over a glyph group. The `desc` / `nodesc` filters read
+		// the live #dset value, so they stay consistent with the checks.
+		const glyphGroups = {
+			all: () => true,
+			up: ch => /[A-Z]/.test(ch),
+			low: ch => /[a-z]/.test(ch),
+			desc: ch => $("dset").value.includes(ch),
+			nodesc: ch => /[a-z]/.test(ch) && !$("dset").value.includes(ch),
+			dig: ch => /[0-9]/.test(ch),
+			pun: ch => /[^A-Za-z0-9 ]/.test(ch),
+		};
+
+		$("apply").onclick = () => {
+			if (!hasGlyphs()) return;
+			const filter = glyphGroups[$("grp").value];
+			const delta = Number($("dy").value);
+			for (const codeStr of Object.keys(glyphs)) {
+				if (filter(charFromCode(Number(codeStr)))) {
+					glyphs[codeStr].yo += delta;
+				}
+			}
+			redrawAll();
+		};
+
+		$("fix").onclick = autoFix;
+		$("dset").oninput = redrawAll;
+		$("top").oninput = runChecks;
+		$("gap").oninput = runChecks;
+
+		$("theme").onclick = () => {
+			const root = document.documentElement;
+			const dark = root.dataset.theme
+				? root.dataset.theme === "dark"
+				: matchMedia("(prefers-color-scheme:dark)").matches;
+			root.dataset.theme = dark ? "light" : "dark";
+			redrawAll();
+		};
+
+		// Click on the atlas to pick a glyph.
+		$("atlas").onclick = event => {
+			if (!hasGlyphs()) return;
+			const rect = event.target.getBoundingClientRect();
+			const px = (event.clientX - rect.left) / rect.width * header.scaleW;
+			const py = (event.clientY - rect.top) / rect.height * header.scaleH;
+
+			const hitCode = Object.keys(glyphs).map(Number).find(code => {
+				const g = glyphs[code];
+				return px >= g.x && px < g.x + g.w
+					&& py >= g.y && py < g.y + g.h;
+			});
+			if (hitCode != null) {
+				selectedCode = hitCode;
+				redrawAll();
+			}
+		};
+
+		// Keyboard: arrow navigation and nudging.
+		addEventListener("keydown", event => {
+			const inField = /INPUT|TEXTAREA|SELECT/.test(event.target.tagName);
+			if (inField || !hasGlyphs()) return;
+
+			const codes = Object.keys(glyphs).map(Number);
+			const idx = codes.indexOf(selectedCode);
+
+			if (event.key === "ArrowRight") {
+				selectedCode = codes[Math.min(codes.length - 1, idx + 1)];
+			} else if (event.key === "ArrowLeft") {
+				selectedCode = codes[Math.max(0, idx - 1)];
+			} else if (event.key === "ArrowUp") {
+				glyphs[selectedCode].yo--;
+			} else if (event.key === "ArrowDown") {
+				glyphs[selectedCode].yo++;
+			} else {
+				return;
+			}
+			event.preventDefault();
+			redrawAll();
 		});
+
+		// =====================================================================
+		// FILE I/O
+		// =====================================================================
+
+		$("exp").onclick = () => { $("fnt").value = buildFntText(); };
+
+		$("cp").onclick = () => {
+			$("fnt").value = buildFntText();
+			try { navigator.clipboard.writeText($("fnt").value); }
+			catch { $("fnt").select(); }
+		};
+
+		$("dl").onclick = () => {
+			if (!hasGlyphs()) return;
+			$("fnt").value = buildFntText();
+			const a = document.createElement("a");
+			a.href = URL.createObjectURL(new Blob([$("fnt").value], { type: "text/plain" }));
+			a.download = ((header.face || "font").replace(/[^\w.-]+/g, "_") || "font") + ".fnt";
+			a.click();
+			setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+		};
+
+		$("load").onclick = () => { parseFnt($("fnt").value); };
+
+		// Drag-and-drop / open-both-together
+		let pendingFnt = null;
+		let pendingPng = null;
+
+		const loadImage = file => new Promise(resolve => {
+			atlasImage.onload = () => {
+				header.scaleW = atlasImage.width;
+				header.scaleH = atlasImage.height;
+				resolve();
+			};
+			atlasImage.src = URL.createObjectURL(file);
+		});
+
 		async function openFiles(list) {
-			const fs = [...(list || [])];
-			const fnt = fs.find(f => /\.(fnt|txt)$/i.test(f.name));
-			const png = fs.find(f => /\.png$/i.test(f.name) || f.type === "image/png");
+			const files = [...(list || [])];
+			const fnt = files.find(f => /\.(fnt|txt)$/i.test(f.name));
+			const png = files.find(f => /\.png$/i.test(f.name) || f.type === "image/png");
+
 			if (fnt) pendingFnt = await fnt.text();
-			if (png) { pendingPng = png; await loadImg(png); }
-			img.onload = draw;
+			if (png) { pendingPng = png; await loadImage(png); }
+
+			atlasImage.onload = redrawAll;
+
 			if (pendingFnt != null && pendingPng) {
-				snap();
 				$("fnt").value = pendingFnt;
-				if (parseFnt(pendingFnt, null, true)) { hdr.sw = img.width; hdr.sh = img.height; draw(); $("hint").textContent = `Loaded ${fnt ? fnt.name : ".fnt"} + ${png.name}.` }
-				else { drop(); $("hint").textContent = "Could not parse .fnt." }
+				if (parseFnt(pendingFnt, null, true)) {
+					header.scaleW = atlasImage.width;
+					header.scaleH = atlasImage.height;
+					redrawAll();
+					$("hint").textContent = `Loaded ${fnt ? fnt.name : ".fnt"} + ${png.name}.`;
+				} else {
+					$("hint").textContent = "Could not parse .fnt.";
+				}
 			} else if (pendingFnt != null) {
-				snap();
 				$("fnt").value = pendingFnt;
-				if (parseFnt(pendingFnt, null, true)) $("hint").textContent = "Loaded .fnt. Now add the matching .png (or drop/open both together).";
-				else { drop(); $("hint").textContent = "Could not parse .fnt." }
+				if (parseFnt(pendingFnt, null, true)) {
+					$("hint").textContent = "Loaded .fnt. Now add the matching .png (or drop/open both together).";
+				} else {
+					$("hint").textContent = "Could not parse .fnt.";
+				}
 			} else if (pendingPng) {
 				$("hint").textContent = `Loaded ${png.name}. Now add the matching .fnt.`;
 			}
 		}
+
 		$("open").onclick = () => $("files").click();
-		$("files").onchange = e => { openFiles(e.target.files); e.target.value = "" };
-		addEventListener("dragover", e => { if (e.dataTransfer && [...e.dataTransfer.types || []].includes("Files")) e.preventDefault() });
-		addEventListener("drop", e => { if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) { e.preventDefault(); openFiles(e.dataTransfer.files) } });
-		$("fnt").addEventListener("paste", () => setTimeout(() => { snap(); if (parseFnt($("fnt").value)) draw(); else drop() }));
-		$("dl").onclick = () => {
-			if (!hasChars()) return;
-			$("fnt").value = out();
-			const a = document.createElement("a");
-			a.href = URL.createObjectURL(new Blob([$("fnt").value], { type: "text/plain" }));
-			a.download = ((hdr.face || "font").replace(/[^\w.-]+/g, "_") || "font") + ".fnt";
-			a.click();
-			setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-		};
-		async function loadDemo(path, name) {
+		$("files").onchange = e => { openFiles(e.target.files); e.target.value = ""; };
+
+		addEventListener("dragover", e => {
+			if (e.dataTransfer && [...e.dataTransfer.types || []].includes("Files")) e.preventDefault();
+		});
+		addEventListener("drop", e => {
+			if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
+				e.preventDefault();
+				openFiles(e.dataTransfer.files);
+			}
+		});
+
+		$("fnt").addEventListener("paste", () => setTimeout(() => {
+			parseFnt($("fnt").value);
+		}));
+
+		// =====================================================================
+		// DEMOS
+		// =====================================================================
+
+		async function loadDemo(path, displayName) {
 			try {
-				const r = await fetch(path);
-				if (!r.ok) throw r.status;
-				const t = await r.text();
-				snap();
-				$("fnt").value = t;
-				if (parseFnt(t, path)) $("hint").textContent = `Loaded demo ${name}.`;
-				else { drop(); $("hint").textContent = `Could not parse demo ${name}.` }
-			} catch (e) {
-				drop();
-				console.error("Failed to load demo", path, e);
-				$("hint").textContent = `Could not load demo ${name}. If opened as a local file, use a local server or Open .fnt + .png….`;
+				const response = await fetch(path);
+				if (!response.ok) throw response.status;
+				const text = await response.text();
+				$("fnt").value = text;
+				if (parseFnt(text, path)) {
+					$("hint").textContent = `Loaded demo ${displayName}.`;
+				} else {
+					$("hint").textContent = `Could not parse demo ${displayName}.`;
+				}
+			} catch (err) {
+				console.error("Failed to load demo", path, err);
+				$("hint").textContent =
+					`Could not load demo ${displayName}. If opened as a local file, ` +
+					`use a local server or Open .fnt + .png\u2026.`;
 			}
 		}
-		$("demo1").onclick = () => loadDemo("Font/Super12.fnt", "Venice16");
-		$("demo2").onclick = () => loadDemo("Font/Venice16.fnt", "Super12");
-		$("demo3").onclick = () => loadDemo("Font/lsans-15.fnt", "lsans-15");
-		img.onload = draw;
-		draw();
+
+		$("demo1").onclick = () => loadDemo("Font/Super12.fnt", "Super12");
+		$("demo2").onclick = () => loadDemo("Font/Venice16.fnt", "Venice16");
+		$("demo3").onclick = () => loadDemo("Font/Ref16.fnt", "Ref16");
+		$("demo4").onclick = () => loadDemo("Font/lsans-15.fnt", "lsans-15");
+
+		// =====================================================================
+		// BOOT
+		// =====================================================================
+
+		atlasImage.onload = redrawAll;
+		redrawAll();
 	</script>
 </body>
 
