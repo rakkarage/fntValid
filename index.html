@@ -476,7 +476,10 @@
 
 		<div class="card" id="checkcard">
 			<p class="cardname">Checks</p>
-			<label>descenders <input id="dset" value="gjpqy" size="6"></label>
+			<label title="True descenders: tops snap to x-height, tails must clear the baseline">descenders <input
+					id="dset" value="gjpqy" size="6"></label>
+			<label title="Extra glyphs allowed to hang below the baseline (e.g. Q, J); not snapped to x-height">may hang <input
+					id="hangset" value="QJ" size="6"></label>
 			<label>top gap <input type="number" id="top" value="0"></label>
 			<label>bottom gap <input type="number" id="gap" value="0"></label>
 			<div class="btns">
@@ -862,7 +865,9 @@
 		function runChecks() {
 			inkReadFailed = false;
 			const descenderChars = $("dset").value;
+			const hangingChars = $("hangset").value;
 			const isDescender = ch => descenderChars.includes(ch);
+			const mayHang = ch => isDescender(ch) || hangingChars.includes(ch);
 			const isAlnum = ch => /[A-Za-z0-9]/.test(ch);
 			const glyphBottom = g => g.yo + g.h;
 
@@ -888,7 +893,7 @@
 					label: "Not on baseline",
 					hint: "bottom \u2260 base",
 					test: (g, ch) =>
-						isAlnum(ch) && !isDescender(ch) && glyphBottom(g) !== baseline,
+						isAlnum(ch) && !mayHang(ch) && glyphBottom(g) !== baseline,
 				},
 				{
 					label: "Descender too high",
@@ -1025,6 +1030,7 @@
 			if (needsTrim()) trimGlyphs();
 
 			const descenderChars = $("dset").value;
+			const hangingChars = $("hangset").value;
 			const topGap = Number($("top").value);
 			const bottomGap = Number($("gap").value);
 			const codes = Object.keys(glyphs).map(Number);
@@ -1038,7 +1044,9 @@
 			const bottomOf = c => glyphs[c].yo + glyphs[c].h;
 			const isFlat = c => {
 				const ch = charFromCode(c);
-				return /[A-Za-z0-9]/.test(ch) && !descenderChars.includes(ch);
+				return /[A-Za-z0-9]/.test(ch)
+					&& !descenderChars.includes(ch)
+					&& !hangingChars.includes(ch);
 			};
 			const flat = codes.filter(isFlat);
 			if (!flat.length) return;
@@ -1301,6 +1309,7 @@
 
 		$("fix").onclick = autoFix;
 		$("dset").oninput = redrawAll;
+		$("hangset").oninput = redrawAll;
 		$("top").oninput = runChecks;
 		$("gap").oninput = runChecks;
 
