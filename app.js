@@ -71,6 +71,9 @@ const $canvas = id => /** @type {HTMLCanvasElement} */($(id));
 /** @type {(id:string) => HTMLTextAreaElement} */
 const $textarea = id => /** @type {HTMLTextAreaElement} */($(id));
 
+/** Clear a stale Auto-fix log so it doesn't describe a previously loaded font. */
+const clearFixLog = () => { $("fixlog").textContent = ""; };
+
 const cssVar = name =>
 	getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 const charFromCode = code => String.fromCharCode(code);
@@ -715,6 +718,7 @@ function buildFntText() {
  * @returns {boolean}
  */
 function parseFnt(text, basePath, skipImageLoad) {
+	clearFixLog();
 	/** @type {CharMap} */
 	const parsedGlyphs = {};
 	const h = { ...header };
@@ -955,7 +959,7 @@ $("dl").onclick = () => {
 	setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 };
 
-$("load").onclick = () => { parseFnt($textarea("fnt").value, null, false); };
+$("load").onclick = () => { clearFixLog(); parseFnt($textarea("fnt").value, null, false); };
 
 // Drag-and-drop / open-both-together
 /** @type {string|null} */ let pendingFnt = null;
@@ -1005,7 +1009,7 @@ async function openFiles(list) {
 	}
 }
 
-$("open").onclick = () => $input("files").click();
+$("open").onclick = () => { clearFixLog(); $input("files").click(); };
 $input("files").onchange = e => {
 	const input = /** @type {HTMLInputElement} */ (e.currentTarget);
 	openFiles(input.files);
@@ -1032,6 +1036,7 @@ $textarea("fnt").addEventListener("paste", () => setTimeout(() => {
 
 /** @param {string} path @param {string} displayName */
 async function loadDemo(path, displayName) {
+	clearFixLog();
 	try {
 		const response = await fetch(path);
 		if (!response.ok) throw response.status;
