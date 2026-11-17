@@ -2,10 +2,25 @@
 // STATE
 // =====================================================================
 
+/** @typedef {{ x:number, y:number, w:number, h:number, xo:number, yo:number, xa:number }} Glyph */
+/** @typedef {{ [code:number]: Glyph }} CharMap */
+/** @typedef {{ l:number, t:number, r:number, b:number }} InkBox */
+/** @typedef {{ face:string, size:number, scaleW:number, scaleH:number, pageFile:string }} Header */
+/**
+ * @typedef {{
+ *   label: string,
+ *   hint: string | (() => string),
+ *   test: (g: Glyph, ch: string, code: number) => boolean,
+ *   fix?: { label: string, title?: string, run: () => void }
+ * }} Rule
+ */
+
 /** charCode -> { x, y, w, h, xo, yo, xa }  (atlas rect + offsets) */
+/** @type {CharMap} */
 let glyphs = {};
 
 /** Font header fields from the "info", "common", and "page" lines. */
+/** @type {Header} */
 let header = { face: "", size: 0, scaleW: 0, scaleH: 0, pageFile: "" };
 
 /** Baseline y and line height, in glyph space. */
@@ -19,19 +34,21 @@ let selectedCode = 65;
 let atlasImage = new Image();
 
 /** Cached per-glyph ink bounds in atlas px: code -> {l,t,r,b}, or null if blank. */
+/** @type {Record<number, InkBox|null> | null} */
 let inkCache = null;
 
 /** Set when the atlas canvas can't be read (e.g. file:// taint, no image). */
 let inkReadFailed = false;
 
 /** Char codes (numbers) that fail at least one check. */
+/** @type {Set<number>} */
 let badChars = new Set();
 
 /** Raw lines preserved verbatim for round-trip export. */
-let extraInfoAttrs = {};
-let extraCommonAttrs = {};
-let pageLines = [];
-let kerningLines = [];
+/** @type {Record<string,string>} */ let extraInfoAttrs = {};
+/** @type {Record<string,string>} */ let extraCommonAttrs = {};
+/** @type {string[]} */ let pageLines = [];
+/** @type {string[]} */ let kerningLines = [];
 
 /**
  * Short for document.getElementById.
@@ -44,6 +61,16 @@ const $ = id => {
 	if (!el) throw new Error(`Missing element #${id}`);
 	return el;
 };
+
+/** @type {(id:string) => HTMLInputElement} */
+const $input = id => /** @type {HTMLInputElement} */($(id));
+
+/** @type {(id:string) => HTMLCanvasElement} */
+const $canvas = id => /** @type {HTMLCanvasElement} */($(id));
+
+/** @type {(id:string) => HTMLTextAreaElement} */
+const $textarea = id => /** @type {HTMLTextAreaElement} */($(id));
+
 const cssVar = name =>
 	getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 const charFromCode = code => String.fromCharCode(code);
@@ -86,8 +113,10 @@ function showEmptyState() {
 	document.querySelector(".overlay-top").style.display = "none";
 	document.querySelector(".overlay-bottom").style.display = "none";
 
-	$("atlas").getContext("2d").clearRect(0, 0, $("atlas").width, $("atlas").height);
-	$("anat").getContext("2d").clearRect(0, 0, $("anat").width, $("anat").height);
+	const atlasCanvas = $canvas("atlas");
+	const anatCanvas = $canvas("anat");
+	atlasCanvas.getContext("2d").clearRect(0, 0, atlasCanvas.width, atlasCanvas.height);
+	anatCanvas.getContext("2d").clearRect(0, 0, anatCanvas.width, anatCanvas.height);
 }
 
 function showOverlays() {
@@ -95,6 +124,7 @@ function showOverlays() {
 	document.querySelector(".overlay-bottom").style.display = "";
 }
 
+/** @param {HTMLCanvasElement} canvasEl @param {number} width @param {number} height */
 function makeCanvasContext(canvasEl, width, height) {
 	canvasEl.width = width;
 	canvasEl.height = height;
@@ -128,7 +158,7 @@ function drawGlyphAnatomy() {
 	const W = Math.ceil((span + PAD_X * 2) * ZOOM);
 	const H = Math.ceil((contentBottom - contentTop + PAD_Y * 2) * ZOOM);
 
-	const ctx = makeCanvasContext($("anat"), W, H);
+	const ctx = makeCanvasContext($canvas("anat"), W, H);
 
 	ctx.fillStyle = cssVar("--card");
 	ctx.fillRect(0, 0, W, H);
@@ -188,10 +218,10 @@ function drawGlyphAnatomy() {
 
 	// legend readouts (HTML overlay / row beneath the canvas)
 	const descenderDepth = glyphBottom - baseline;
-	$("vb").textContent = baseline;
-	$("vl").textContent = lineHeight;
-	$("vbot").textContent = glyphBottom;
-	$("xa").textContent = glyph.xa;
+	$("vb").textContent = String(baseline);
+	$("vl").textContent = String(lineHeight);
+	$("vbot").textContent = String(glyphBottom);
+	$("xa").textContent = String(glyph.xa);
 	$("vbd").textContent = descenderDepth
 		? (descenderDepth > 0 ? `+${descenderDepth}px ` : `${descenderDepth}px `)
 		: "";
@@ -203,7 +233,7 @@ function drawGlyphAnatomy() {
 
 function drawAtlasOverview() {
 	const ZOOM = 4;
-	const ctx = makeCanvasContext($("atlas"), header.scaleW * ZOOM, header.scaleH * ZOOM);
+	const ctx = makeCanvasContext($canvas("atlas"), header.scaleW * ZOOM, header.scaleH * ZOOM);
 
 	ctx.fillStyle = cssVar("--card");
 	ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
@@ -242,11 +272,11 @@ function renderGlyphGrid() {
 
 function syncFormFields() {
 	const glyph = glyphs[selectedCode];
-	$("iyo").value = glyph.yo;
-	$("ixo").value = glyph.xo;
-	$("ixa").value = glyph.xa;
-	$("ibase").value = baseline;
-	$("ilh").value = lineHeight;
+	$input("iyo").value = String(glyph.yo);
+	$input("ixo").value = String(glyph.xo);
+	$input("ixa").value = String(glyph.xa);
+	$input("ibase").value = String(baseline);
+	$input("ilh").value = String(lineHeight);
 
 	$("selinfo").textContent =
 		`id ${selectedCode} \u201C${charFromCode(selectedCode)}\u201D ` +
@@ -263,7 +293,10 @@ function syncFormFields() {
 const invalidateInkCache = () => { inkCache = null; };
 
 /** Tight bounding box of non-transparent pixels inside a glyph's atlas
- *  rect. Returns null for a blank glyph, or when pixels can't be read. */
+ *  rect. Returns null for a blank glyph, or when pixels can't be read.
+ *  @param {number} code
+ *  @returns {InkBox|null}
+ */
 function inkBox(code) {
 	if (!inkCache) inkCache = {};
 	if (code in inkCache) return inkCache[code];
@@ -296,7 +329,8 @@ function inkBox(code) {
 	return inkCache[code] = r < 0 ? null : { l, t, r: r + 1, b: b + 1 };
 }
 
-/** True when a glyph's rect has transparent padding on any edge. */
+/** True when a glyph's rect has transparent padding on any edge.
+ *  @param {number} code */
 function hasBlankEdges(code) {
 	const k = inkBox(code), g = glyphs[code];
 	return !!k && (k.l > 0 || k.t > 0 || k.r < g.w || k.b < g.h);
@@ -335,13 +369,14 @@ function trimAll() {
 
 function runChecks() {
 	inkReadFailed = false;
-	const descenderChars = $("dset").value;
-	const hangingChars = $("hangset").value;
+	const descenderChars = $input("dset").value;
+	const hangingChars = $input("hangset").value;
 	const isDescender = ch => descenderChars.includes(ch);
 	const mayHang = ch => isDescender(ch) || hangingChars.includes(ch);
 	const isAlnum = ch => /[A-Za-z0-9]/.test(ch);
 	const glyphBottom = g => g.yo + g.h;
 
+	/** @type {Rule[]} */
 	const rules = [
 		{
 			label: "Rect has blank edges",
@@ -396,6 +431,14 @@ function runChecks() {
 	badChars = new Set();
 	let totalFailingRules = 0;
 
+	/**
+	 * @param {boolean} pass
+	 * @param {string} label
+	 * @param {string | (() => string)} hint
+	 * @param {number} [count]
+	 * @param {number[]} [failingCodes]
+	 * @param {{ label:string, title?:string, run:() => void }} [fix]
+	 */
 	const renderRow = (pass, label, hint, count, failingCodes, fix) => {
 		if (!pass) totalFailingRules++;
 		const hintText = typeof hint === "function" ? hint() : hint;
@@ -455,8 +498,8 @@ function runChecks() {
 	// two global checks
 	const allGlyphs = Object.values(glyphs);
 	if (allGlyphs.length) {
-		const desiredTopGap = Number($("top").value);
-		const desiredBotGap = Number($("gap").value);
+		const desiredTopGap = Number($input("top").value);
+		const desiredBotGap = Number($input("gap").value);
 
 		const highestY = Math.min(...allGlyphs.map(g => g.yo));
 		const lowestBottom = Math.max(...allGlyphs.map(g => g.yo + g.h));
@@ -489,7 +532,9 @@ function runChecks() {
 // AUTO-FIX
 // =====================================================================
 
+/** @param {number[]} values @returns {number|null} */
 function mostCommonValue(values) {
+	/** @type {Record<number, number>} */
 	const counts = {};
 	for (const v of values) counts[v] = (counts[v] || 0) + 1;
 	const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
@@ -500,11 +545,12 @@ function autoFix() {
 	// Lossless; the math below assumes tight rects.
 	if (needsTrim()) trimGlyphs();
 
-	const descenderChars = $("dset").value;
-	const hangingChars = $("hangset").value;
-	const topGap = Number($("top").value);
-	const bottomGap = Number($("gap").value);
+	const descenderChars = $input("dset").value;
+	const hangingChars = $input("hangset").value;
+	const topGap = Number($input("top").value);
+	const bottomGap = Number($input("gap").value);
 	const codes = Object.keys(glyphs).map(Number);
+	/** @type {string[]} */
 	const log = [];
 
 	const AGREE = 0.6;      // share of flat glyphs that must agree to call it a uniform shift
@@ -592,6 +638,12 @@ function autoFix() {
 // EXPORT
 // =====================================================================
 
+/**
+ * @param {string} tag
+ * @param {Record<string, any>} obj
+ * @param {string[]} [preferredOrder]
+ * @returns {string}
+ */
 function formatAttributes(tag, obj, preferredOrder) {
 	const keys = preferredOrder
 		? [...preferredOrder, ...Object.keys(obj).filter(k => !preferredOrder.includes(k))]
@@ -656,18 +708,28 @@ function buildFntText() {
 // PARSER
 // =====================================================================
 
+/**
+ * @param {string} text
+ * @param {string|null} basePath
+ * @param {boolean} [skipImageLoad]
+ * @returns {boolean}
+ */
 function parseFnt(text, basePath, skipImageLoad) {
+	/** @type {CharMap} */
 	const parsedGlyphs = {};
 	const h = { ...header };
 	let parsedLineHeight = lineHeight;
 	let parsedBaseline = baseline;
 
+	/** @param {string} line @param {string} key @returns {string|null} */
 	const getAttr = (line, key) => {
 		const m = line.match(new RegExp("\\b" + key + '="?([^"\\s]*)"?'));
 		return m ? m[1] : null;
 	};
 
+	/** @param {string} line @returns {Record<string,string>} */
 	const parseAllAttrs = line => {
+		/** @type {Record<string,string>} */
 		const o = {};
 		line.replace(/(\w+)=("([^"]*)"|[^\s]+)/g, (_, k, _v, quoted) => {
 			o[k] = quoted != null ? quoted : _v;
@@ -675,7 +737,10 @@ function parseFnt(text, basePath, skipImageLoad) {
 		return o;
 	};
 
-	const info = {}, common = {}, pages = [], kernings = [];
+	/** @type {Record<string,string>} */ const info = {};
+	/** @type {Record<string,string>} */ const common = {};
+	/** @type {string[]} */ const pages = [];
+	/** @type {string[]} */ const kernings = [];
 
 	text.split(/\r?\n/).forEach(rawLine => {
 		const line = rawLine.trim();
@@ -741,50 +806,56 @@ function parseFnt(text, basePath, skipImageLoad) {
 // EVENT HANDLERS
 // =====================================================================
 
-/** Editors that mutate a single glyph field or the baseline/lineHeight. */
+/**
+ * Editors that mutate a single glyph field or the baseline/lineHeight.
+ * @param {string} id
+ * @param {(v:number) => void} applyFn
+ */
 function bindNumericInput(id, applyFn) {
-	$(id).oninput = event => {
+	$input(id).oninput = event => {
 		if (!hasGlyphs()) return;
-		applyFn(event);
+		const target = /** @type {HTMLInputElement} */ (event.target);
+		applyFn(+target.value);
 		redrawAll();
 	};
 }
 
-bindNumericInput("iyo", e => { glyphs[selectedCode].yo = +e.target.value; });
-bindNumericInput("ixo", e => { glyphs[selectedCode].xo = +e.target.value; });
-bindNumericInput("ixa", e => { glyphs[selectedCode].xa = +e.target.value; });
-bindNumericInput("ibase", e => { baseline = +e.target.value; });
-bindNumericInput("ilh", e => { lineHeight = +e.target.value; });
+bindNumericInput("iyo", v => { glyphs[selectedCode].yo = v; });
+bindNumericInput("ixo", v => { glyphs[selectedCode].xo = v; });
+bindNumericInput("ixa", v => { glyphs[selectedCode].xa = v; });
+bindNumericInput("ibase", v => { baseline = v; });
+bindNumericInput("ilh", v => { lineHeight = v; });
 
 // Bulk-shift Δy over a glyph group. The `desc` / `nodesc` filters read
 // the live #dset value, so they stay consistent with the checks.
+/** @type {Record<string, (ch:string) => boolean>} */
 const glyphGroups = {
 	all: () => true,
 	up: ch => /[A-Z]/.test(ch),
 	low: ch => /[a-z]/.test(ch),
-	desc: ch => $("dset").value.includes(ch),
-	nodesc: ch => /[a-z]/.test(ch) && !$("dset").value.includes(ch),
+	desc: ch => $input("dset").value.includes(ch),
+	nodesc: ch => /[a-z]/.test(ch) && !$input("dset").value.includes(ch),
 	dig: ch => /[0-9]/.test(ch),
 	pun: ch => /[^A-Za-z0-9 ]/.test(ch),
 };
 
 $("apply").onclick = () => {
 	if (!hasGlyphs()) return;
-	const filter = glyphGroups[$("grp").value];
-	const delta = Number($("dy").value);
+	const filter = glyphGroups[$input("grp").value];
+	const delta = Number($input("dy").value);
 	for (const codeStr of Object.keys(glyphs)) {
 		if (filter(charFromCode(Number(codeStr)))) {
-			glyphs[codeStr].yo += delta;
+			glyphs[Number(codeStr)].yo += delta;
 		}
 	}
 	redrawAll();
 };
 
 $("fix").onclick = autoFix;
-$("dset").oninput = redrawAll;
-$("hangset").oninput = redrawAll;
-$("top").oninput = runChecks;
-$("gap").oninput = runChecks;
+$input("dset").oninput = redrawAll;
+$input("hangset").oninput = redrawAll;
+$input("top").oninput = runChecks;
+$input("gap").oninput = runChecks;
 
 $("theme").onclick = () => {
 	const root = document.documentElement;
@@ -798,9 +869,10 @@ $("theme").onclick = () => {
 };
 
 // Click on the atlas to pick a glyph.
-$("atlas").onclick = event => {
+const atlasCanvas = $canvas("atlas");
+atlasCanvas.onclick = event => {
 	if (!hasGlyphs()) return;
-	const rect = event.currentTarget.getBoundingClientRect();
+	const rect = atlasCanvas.getBoundingClientRect();
 	const px = (event.clientX - rect.left) / rect.width * header.scaleW;
 	const py = (event.clientY - rect.top) / rect.height * header.scaleH;
 
@@ -818,7 +890,8 @@ $("atlas").onclick = event => {
 // Keyboard: plain arrows nudge the selected glyph (xoffset/yoffset),
 // Mod (Ctrl/Cmd) + arrows select a glyph instead.
 addEventListener("keydown", event => {
-	const inField = /INPUT|TEXTAREA|SELECT/.test(event.target.tagName);
+	const target = /** @type {HTMLElement} */ (event.target);
+	const inField = /INPUT|TEXTAREA|SELECT/.test(target.tagName);
 	if (inField || !hasGlyphs()) return;
 
 	const codes = Object.keys(glyphs).map(Number);
@@ -862,10 +935,10 @@ addEventListener("keydown", event => {
 // FILE I/O
 // =====================================================================
 
-$("exp").onclick = () => { $("fnt").value = buildFntText(); };
+$("exp").onclick = () => { $textarea("fnt").value = buildFntText(); };
 
 $("cp").onclick = () => {
-	const fnt = /** @type {HTMLTextAreaElement} */ ($("fnt"));
+	const fnt = $textarea("fnt");
 	fnt.value = buildFntText();
 	try { navigator.clipboard.writeText(fnt.value); }
 	catch { fnt.select(); }
@@ -873,20 +946,22 @@ $("cp").onclick = () => {
 
 $("dl").onclick = () => {
 	if (!hasGlyphs()) return;
-	$("fnt").value = buildFntText();
+	const fnt = $textarea("fnt");
+	fnt.value = buildFntText();
 	const a = document.createElement("a");
-	a.href = URL.createObjectURL(new Blob([$("fnt").value], { type: "text/plain" }));
+	a.href = URL.createObjectURL(new Blob([fnt.value], { type: "text/plain" }));
 	a.download = ((header.face || "font").replace(/[^\w.-]+/g, "_") || "font") + ".fnt";
 	a.click();
 	setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 };
 
-$("load").onclick = () => { parseFnt($("fnt").value); };
+$("load").onclick = () => { parseFnt($textarea("fnt").value, null, false); };
 
 // Drag-and-drop / open-both-together
-let pendingFnt = null;
-let pendingPng = null;
+/** @type {string|null} */ let pendingFnt = null;
+/** @type {File|null} */ let pendingPng = null;
 
+/** @param {File} file @returns {Promise<void>} */
 const loadImage = file => new Promise(resolve => {
 	atlasImage.onload = () => {
 		invalidateInkCache();
@@ -897,6 +972,7 @@ const loadImage = file => new Promise(resolve => {
 	atlasImage.src = URL.createObjectURL(file);
 });
 
+/** @param {FileList|File[]|null} list */
 async function openFiles(list) {
 	const files = [...(list || [])];
 	const fnt = files.find(f => /\.(fnt|txt)$/i.test(f.name));
@@ -908,7 +984,7 @@ async function openFiles(list) {
 	atlasImage.onload = () => { invalidateInkCache(); redrawAll(); };
 
 	if (pendingFnt != null && pendingPng) {
-		$("fnt").value = pendingFnt;
+		$textarea("fnt").value = pendingFnt;
 		if (parseFnt(pendingFnt, null, true)) {
 			header.scaleW = atlasImage.width;
 			header.scaleH = atlasImage.height;
@@ -918,7 +994,7 @@ async function openFiles(list) {
 			$("hint").textContent = "Could not parse .fnt.";
 		}
 	} else if (pendingFnt != null) {
-		$("fnt").value = pendingFnt;
+		$textarea("fnt").value = pendingFnt;
 		if (parseFnt(pendingFnt, null, true)) {
 			$("hint").textContent = "Loaded .fnt. Now add the matching .png (or drop/open both together).";
 		} else {
@@ -929,8 +1005,8 @@ async function openFiles(list) {
 	}
 }
 
-$("open").onclick = () => $("files").click();
-$("files").onchange = e => {
+$("open").onclick = () => $input("files").click();
+$input("files").onchange = e => {
 	const input = /** @type {HTMLInputElement} */ (e.currentTarget);
 	openFiles(input.files);
 	input.value = "";
@@ -946,21 +1022,22 @@ addEventListener("drop", e => {
 	}
 });
 
-$("fnt").addEventListener("paste", () => setTimeout(() => {
-	parseFnt($("fnt").value);
+$textarea("fnt").addEventListener("paste", () => setTimeout(() => {
+	parseFnt($textarea("fnt").value, null, false);
 }));
 
 // =====================================================================
 // DEMOS
 // =====================================================================
 
+/** @param {string} path @param {string} displayName */
 async function loadDemo(path, displayName) {
 	try {
 		const response = await fetch(path);
 		if (!response.ok) throw response.status;
 		const text = await response.text();
-		$("fnt").value = text;
-		if (parseFnt(text, path)) {
+		$textarea("fnt").value = text;
+		if (parseFnt(text, path, false)) {
 			$("hint").textContent = `Loaded demo ${displayName}.`;
 		} else {
 			$("hint").textContent = `Could not parse demo ${displayName}.`;
