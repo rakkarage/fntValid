@@ -5,6 +5,13 @@
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 	<title>fntValid</title>
+	<script>
+		// Restore the saved theme before first paint to avoid a flash.
+		try {
+			const saved = localStorage.getItem("theme");
+			if (saved) document.documentElement.dataset.theme = saved;
+		} catch (e) {}
+	</script>
 	<style>
 		:root {
 			--bg: #eceff3;
@@ -1267,7 +1274,9 @@
 			const dark = root.dataset.theme
 				? root.dataset.theme === "dark"
 				: matchMedia("(prefers-color-scheme:dark)").matches;
-			root.dataset.theme = dark ? "light" : "dark";
+			const next = dark ? "light" : "dark";
+			root.dataset.theme = next;
+			try { localStorage.setItem("theme", next); } catch (e) {}
 			redrawAll();
 		};
 
