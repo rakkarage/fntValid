@@ -519,6 +519,13 @@
 		/** Currently selected char code (65 = 'A' by default). */
 		let selectedCode = 65;
 
+		/**
+		 * Anatomy-preview viewport in glyph-space units: { code, left, right, top, bottom }.
+		 * Kept across nudges so the glyph moves inside a stable frame; only grows when
+		 * the glyph reaches the buffer. Rebuilt when a different glyph is selected.
+		 */
+		let anatView = null;
+
 		/** The atlas PNG. */
 		let atlasImage = new Image();
 
@@ -594,21 +601,14 @@
 		function drawGlyphAnatomy() {
 			const glyph = glyphs[selectedCode];
 			const ZOOM = 28;
-			const PAD_L = 4, PAD_T = 1, PAD_R = 1, PAD_B = 2; // padding in glyph-space units
+			const BUFFER = 4; // breathing room kept around the content, in glyph-space units
 
-			// Content bounds include the glyph at its current offsets as well as the
-			// fixed guides (top/base/lineHeight) and the advance box, so the preview
-			// grows whichever direction the glyph is nudged.
-			const contentLeft = Math.min(0, glyph.xo);
-			const contentRight = Math.max(1, glyph.xa, glyph.xo + glyph.w);
-			const contentTop = Math.min(0, glyph.yo, baseline);
-			const contentBottom = Math.max(0, lineHeight, glyph.yo + glyph.h, baseline);
-
-			// Measure guide-label width on a throwaway canvas.
+			// Measure guide-label width on a throwaway canvas. The right strip holds
+			// the labels; an equal strip on the left keeps the visible buffer even.
 			const tempCtx = makeCanvasContext(document.createElement("canvas"), 1, 1);
 			tempCtx.font = "12px system-ui";
 			// label space: longest guide label like "base, bottom 16"
-			const labelPad = Math.ceil(
+			const SIDE = Math.ceil(
 				Math.max(
 					tempCtx.measureText("top " + 0).width,
 					tempCtx.measureText("base " + baseline).width,
@@ -616,13 +616,49 @@
 					tempCtx.measureText("bottom " + (glyph.yo + glyph.h)).width,
 					tempCtx.measureText("base, bottom " + Math.max(baseline, glyph.yo + glyph.h)).width
 				) / ZOOM
-			) + 1;
+			) + 2;
+
+			// Everything that must stay visible: the glyph at its current offsets,
+			// the guides (top/base/lineHeight), and the advance box from (0,0).
+			const req = {
+				left: Math.min(0, glyph.xo),
+				right: Math.max(1, glyph.xa, glyph.xo + glyph.w),
+				top: Math.min(0, glyph.yo, baseline),
+				bottom: Math.max(0, lineHeight, glyph.yo + glyph.h, baseline),
+			};
+
+			// anatView holds the canvas edges in glyph-space units. Left/right keep
+			// BUFFER of slack to an inner boundary SIDE units inside the visible edge,
+			// mirroring the right-hand label strip so both sides refit evenly.
+			// Top/bottom have no label strip, so their inner boundary is the edge.
+			const fitX = (edge, need, lo) =>
+				need < edge + SIDE || (need - edge - SIDE) > BUFFER * 2
+					? need - lo : edge;
+			if (!anatView || anatView.code !== selectedCode) {
+				anatView = {
+					code: selectedCode,
+					left: req.left - BUFFER - SIDE,
+					right: req.right + BUFFER + SIDE,
+					top: req.top - BUFFER,
+					bottom: req.bottom + BUFFER,
+				};
+			} else {
+				// Hysteresis: grow when content reaches the buffer edge, shrink only
+				// when there is far more slack than needed. Both reset to BUFFER.
+				anatView.left = fitX(anatView.left, req.left, BUFFER + SIDE);
+				anatView.right = -fitX(-anatView.right, -req.right, BUFFER + SIDE);
+				const shrinkAt = BUFFER * 2;
+				if (req.top < anatView.top || req.top - anatView.top > shrinkAt)
+					anatView.top = req.top - BUFFER;
+				if (req.bottom > anatView.bottom || anatView.bottom - req.bottom > shrinkAt)
+					anatView.bottom = req.bottom + BUFFER;
+			}
 
 			// Map glyph-space (0,0) to (originX, originY) inside the canvas.
-			const originX = (PAD_L - contentLeft) * ZOOM;
-			const originY = (PAD_T - contentTop) * ZOOM;
-			const W = Math.ceil((PAD_L - contentLeft + contentRight + PAD_R + labelPad + 1) * ZOOM);
-			const H = Math.ceil((PAD_T - contentTop + contentBottom + PAD_B) * ZOOM);
+			const originX = -anatView.left * ZOOM;
+			const originY = -anatView.top * ZOOM;
+			const W = Math.ceil((anatView.right - anatView.left) * ZOOM);
+			const H = Math.ceil((anatView.bottom - anatView.top) * ZOOM);
 
 			const ctx = makeCanvasContext($("anat"), W, H);
 			ctx.font = "12px system-ui";
@@ -707,7 +743,7 @@
 				const labelText = parts.map(p => p.t).join("");
 				const labelW = ctx.measureText(labelText).width;
 				const labelX = Math.min(
-					originX + contentRight * ZOOM + 6,
+					originX + (anatView.right - SIDE) * ZOOM + 6,
 					W - labelW - 4
 				);
 				drawGuide(group.y, lineColor, parts, labelX);
@@ -1112,6 +1148,7 @@
 			kerningLines = kernings;
 
 			selectedCode = glyphs[65] ? 65 : Number(Object.keys(glyphs)[0]);
+			anatView = null;
 
 			if (header.pageFile && !skipImageLoad) {
 				const dir = basePath ? basePath.replace(/[^/]*$/, "") : "";
