@@ -523,6 +523,12 @@
 		/** The atlas PNG. */
 		let atlasImage = new Image();
 
+		/** Cached per-glyph ink bounds in atlas px: code -> {l,t,r,b}, or null if blank. */
+		let inkCache = null;
+
+		/** Set when the atlas canvas can't be read (e.g. file:// taint, no image). */
+		let inkReadFailed = false;
+
 		/** Char codes (numbers) that fail at least one check. */
 		let badChars = new Set();
 
@@ -767,16 +773,104 @@
 		}
 
 		// =====================================================================
+		// INK BOX / TRIM
+		// =====================================================================
+
+		/** Drop cached ink bounds (call whenever the atlas or a rect changes;
+		 *  nudging xoffset/yoffset does not affect them). */
+		const invalidateInkCache = () => { inkCache = null; };
+
+		/** Tight bounding box of non-transparent pixels inside a glyph's atlas
+		 *  rect. Returns null for a blank glyph, or when pixels can't be read. */
+		function inkBox(code) {
+			if (!inkCache) inkCache = {};
+			if (code in inkCache) return inkCache[code];
+			const g = glyphs[code];
+			if (g.w <= 0 || g.h <= 0) return inkCache[code] = null; // no pixels to read
+			const c = document.createElement("canvas");
+			c.width = g.w;
+			c.height = g.h;
+			const cx = c.getContext("2d", { willReadFrequently: true });
+			let d;
+			try {
+				cx.drawImage(atlasImage, g.x, g.y, g.w, g.h, 0, 0, g.w, g.h);
+				d = cx.getImageData(0, 0, g.w, g.h).data;
+			} catch {
+				inkReadFailed = true;
+				inkCache = null; // let a later redraw retry once an image is loaded
+				return null;
+			}
+			let l = g.w, t = g.h, r = -1, b = -1;
+			for (let y = 0; y < g.h; y++) {
+				for (let x = 0; x < g.w; x++) {
+					if (d[(y * g.w + x) * 4 + 3] > 0) {
+						if (x < l) l = x;
+						if (x > r) r = x;
+						if (y < t) t = y;
+						if (y > b) b = y;
+					}
+				}
+			}
+			return inkCache[code] = r < 0 ? null : { l, t, r: r + 1, b: b + 1 };
+		}
+
+		/** True when a glyph's rect has transparent padding on any edge. */
+		function hasBlankEdges(code) {
+			const k = inkBox(code), g = glyphs[code];
+			return !!k && (k.l > 0 || k.t > 0 || k.r < g.w || k.b < g.h);
+		}
+
+		/** Any glyph currently failing the blank-edge rule? */
+		function needsTrim() {
+			return Object.keys(glyphs).map(Number).some(code => hasBlankEdges(code));
+		}
+
+		/** Crop every non-blank glyph's rect to its ink. Offsets move with it so
+		 *  the glyph renders identically; advances are left untouched. */
+		function trimGlyphs() {
+			for (const code of Object.keys(glyphs).map(Number)) {
+				const k = inkBox(code), g = glyphs[code];
+				if (!k) continue; // blank glyph (e.g. space): leave alone
+				g.x += k.l;
+				g.y += k.t;
+				g.xo += k.l;
+				g.yo += k.t;
+				g.w = k.r - k.l;
+				g.h = k.b - k.t;
+			}
+			invalidateInkCache();
+		}
+
+		/** Trim-only shortcut. Auto-fix calls trimGlyphs() before its metric math. */
+		function trimAll() {
+			trimGlyphs();
+			redrawAll();
+		}
+
+		// =====================================================================
 		// CHECKS
 		// =====================================================================
 
 		function runChecks() {
+			inkReadFailed = false;
 			const descenderChars = $("dset").value;
 			const isDescender = ch => descenderChars.includes(ch);
 			const isAlnum = ch => /[A-Za-z0-9]/.test(ch);
 			const glyphBottom = g => g.yo + g.h;
 
 			const rules = [
+				{
+					label: "Rect has blank edges",
+					hint: () => inkReadFailed
+						? "can't read pixels, use Open .fnt + .png"
+						: "rect \u2260 ink bbox",
+					test: (g, ch, code) => hasBlankEdges(code),
+					fix: {
+						label: "Trim",
+						title: "Trim only (lossless) \u2014 Auto-fix trims too",
+						run: trimAll,
+					},
+				},
 				{
 					label: "Above top",
 					hint: "yoffset < 0",
@@ -808,7 +902,7 @@
 				},
 				{
 					label: "Advance too small",
-					hint: "wider than advance",
+					hint: "wider than advance \u00B7 trim, else real ink",
 					test: g => g.xa < g.xo + g.w,
 				},
 			];
@@ -818,15 +912,16 @@
 			badChars = new Set();
 			let totalFailingRules = 0;
 
-			const renderRow = (pass, label, hint, count, failingCodes) => {
+			const renderRow = (pass, label, hint, count, failingCodes, fix) => {
 				if (!pass) totalFailingRules++;
+				const hintText = typeof hint === "function" ? hint() : hint;
 
 				const row = document.createElement("div");
 				row.className = "chk " + (pass ? "ok" : "no");
 				row.innerHTML =
 					`<p><span class="ic">${pass ? "\u2713" : "\u2717"}</span>` +
 					`<span class="t">${label}</span>` +
-					`<span class="mut">${hint}</span>` +
+					`<span class="mut">${hintText}</span>` +
 					(count == null ? "" :
 						`<span class="cnt" style="color:var(${pass ? "--g" : "--y"})">${count}</span>`) +
 					`</p>`;
@@ -842,6 +937,18 @@
 						chips.appendChild(b);
 					}
 					row.appendChild(chips);
+
+					if (fix) {
+						const btns = document.createElement("div");
+						btns.className = "btns";
+						btns.style.margin = "6px 0 0";
+						const b = document.createElement("button");
+						b.textContent = fix.label;
+						if (fix.title) b.title = fix.title;
+						b.onclick = fix.run;
+						btns.appendChild(b);
+						row.appendChild(btns);
+					}
 				}
 				resultsEl.appendChild(row);
 			};
@@ -849,14 +956,15 @@
 			for (const rule of rules) {
 				const failingCodes = Object.keys(glyphs)
 					.map(Number)
-					.filter(code => rule.test(glyphs[code], charFromCode(code)));
+					.filter(code => rule.test(glyphs[code], charFromCode(code), code));
 				for (const code of failingCodes) badChars.add(code);
 				renderRow(
 					failingCodes.length === 0,
 					rule.label,
 					rule.hint,
 					failingCodes.length,
-					failingCodes
+					failingCodes,
+					rule.fix
 				);
 			}
 
@@ -905,6 +1013,11 @@
 		}
 
 		function autoFix() {
+			// Lossless and idempotent, and the bottom-row math below assumes tight
+			// rects — so make it part of the fix instead of a separate step.
+			// Skipped automatically when the atlas pixels can't be read.
+			if (needsTrim()) trimGlyphs();
+
 			const descenderChars = $("dset").value;
 			const topGap = Number($("top").value);
 			const bottomGap = Number($("gap").value);
@@ -1090,9 +1203,10 @@
 
 			selectedCode = glyphs[65] ? 65 : Number(Object.keys(glyphs)[0]);
 
+			invalidateInkCache();
 			if (header.pageFile && !skipImageLoad) {
 				const dir = basePath ? basePath.replace(/[^/]*$/, "") : "";
-				atlasImage.onload = redrawAll;
+				atlasImage.onload = () => { invalidateInkCache(); redrawAll(); };
 				atlasImage.src = dir + header.pageFile;
 			} else {
 				redrawAll();
@@ -1248,6 +1362,7 @@
 
 		const loadImage = file => new Promise(resolve => {
 			atlasImage.onload = () => {
+				invalidateInkCache();
 				header.scaleW = atlasImage.width;
 				header.scaleH = atlasImage.height;
 				resolve();
@@ -1263,7 +1378,7 @@
 			if (fnt) pendingFnt = await fnt.text();
 			if (png) { pendingPng = png; await loadImage(png); }
 
-			atlasImage.onload = redrawAll;
+			atlasImage.onload = () => { invalidateInkCache(); redrawAll(); };
 
 			if (pendingFnt != null && pendingPng) {
 				$("fnt").value = pendingFnt;
@@ -1338,7 +1453,7 @@
 		// BOOT
 		// =====================================================================
 
-		atlasImage.onload = redrawAll;
+		atlasImage.onload = () => { invalidateInkCache(); redrawAll(); };
 		redrawAll();
 	</script>
 </body>
