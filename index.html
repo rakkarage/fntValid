@@ -281,7 +281,17 @@
 		}
 
 		.preview-box canvas {
-			width: 100%;
+			width: auto;
+			max-width: 100%;
+			height: auto
+		}
+
+		/* Fill the card when small, but never scale down: a downscaled 1px dashed
+		   box disappears. Larger canvases stay 1:1 and the .sc wrapper scrolls. */
+		#anat {
+			width: auto;
+			min-width: 100%;
+			max-width: none;
 			height: auto
 		}
 
@@ -603,21 +613,6 @@
 			const ZOOM = 28;
 			const BUFFER = 4; // breathing room kept around the content, in glyph-space units
 
-			// Measure guide-label width on a throwaway canvas. The right strip holds
-			// the labels; an equal strip on the left keeps the visible buffer even.
-			const tempCtx = makeCanvasContext(document.createElement("canvas"), 1, 1);
-			tempCtx.font = "12px system-ui";
-			// label space: longest guide label like "base, bottom 16"
-			const SIDE = Math.ceil(
-				Math.max(
-					tempCtx.measureText("top " + 0).width,
-					tempCtx.measureText("base " + baseline).width,
-					tempCtx.measureText("lineHeight " + lineHeight).width,
-					tempCtx.measureText("bottom " + (glyph.yo + glyph.h)).width,
-					tempCtx.measureText("base, bottom " + Math.max(baseline, glyph.yo + glyph.h)).width
-				) / ZOOM
-			) + 2;
-
 			// Everything that must stay visible: the glyph at its current offsets,
 			// the guides (top/base/lineHeight), and the advance box from (0,0).
 			const req = {
@@ -627,27 +622,26 @@
 				bottom: Math.max(0, lineHeight, glyph.yo + glyph.h, baseline),
 			};
 
-			// anatView holds the canvas edges in glyph-space units. Left/right keep
-			// BUFFER of slack to an inner boundary SIDE units inside the visible edge,
-			// mirroring the right-hand label strip so both sides refit evenly.
-			// Top/bottom have no label strip, so their inner boundary is the edge.
-			const fitX = (edge, need, lo) =>
-				need < edge + SIDE || (need - edge - SIDE) > BUFFER * 2
-					? need - lo : edge;
+			// anatView holds the canvas edges in glyph-space units. Reserve as little
+			// as possible: just BUFFER around the content so the canvas stays near
+			// 1:1 on screen (scaling it down makes the dashed box fade away). Guide
+			// labels sit at the right edge and may overlap the glyph if needed.
 			if (!anatView || anatView.code !== selectedCode) {
 				anatView = {
 					code: selectedCode,
-					left: req.left - BUFFER - SIDE,
-					right: req.right + BUFFER + SIDE,
+					left: req.left - BUFFER,
+					right: req.right + BUFFER,
 					top: req.top - BUFFER,
 					bottom: req.bottom + BUFFER,
 				};
 			} else {
 				// Hysteresis: grow when content reaches the buffer edge, shrink only
 				// when there is far more slack than needed. Both reset to BUFFER.
-				anatView.left = fitX(anatView.left, req.left, BUFFER + SIDE);
-				anatView.right = -fitX(-anatView.right, -req.right, BUFFER + SIDE);
 				const shrinkAt = BUFFER * 2;
+				if (req.left < anatView.left || req.left - anatView.left > shrinkAt)
+					anatView.left = req.left - BUFFER;
+				if (req.right > anatView.right || anatView.right - req.right > shrinkAt)
+					anatView.right = req.right + BUFFER;
 				if (req.top < anatView.top || req.top - anatView.top > shrinkAt)
 					anatView.top = req.top - BUFFER;
 				if (req.bottom > anatView.bottom || anatView.bottom - req.bottom > shrinkAt)
@@ -742,10 +736,7 @@
 				// place labels to the right of content, clamped inside canvas
 				const labelText = parts.map(p => p.t).join("");
 				const labelW = ctx.measureText(labelText).width;
-				const labelX = Math.min(
-					originX + (anatView.right - SIDE) * ZOOM + 6,
-					W - labelW - 4
-				);
+				const labelX = W - labelW - 4;
 				drawGuide(group.y, lineColor, parts, labelX);
 			}
 
