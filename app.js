@@ -33,7 +33,17 @@ let extraCommonAttrs = {};
 let pageLines = [];
 let kerningLines = [];
 
-const $ = id => document.getElementById(id);
+/**
+ * Short for document.getElementById.
+ * Throws early with a clear message if an id is missing or misspelled.
+ * @param {string} id
+ * @returns {HTMLElement}
+ */
+const $ = id => {
+	const el = document.getElementById(id);
+	if (!el) throw new Error(`Missing element #${id}`);
+	return el;
+};
 const cssVar = name =>
 	getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 const charFromCode = code => String.fromCharCode(code);
@@ -516,6 +526,7 @@ function autoFix() {
 	{
 		const bottoms = flat.map(bottomOf);
 		const modal = mostCommonValue(bottoms);
+		if (modal == null) return; // unreachable: flat is non-empty
 		const agree = bottoms.filter(b => b === modal).length / bottoms.length;
 		if (agree >= AGREE && modal !== baseline) {
 			const d = baseline - modal;
@@ -535,6 +546,7 @@ function autoFix() {
 
 	// 1. Snap near-misses to the common baseline; leave big deviations (f J Q Y) for review.
 	const commonBottom = mostCommonValue(flat.map(bottomOf));
+	if (commonBottom == null) return; // unreachable: flat is non-empty
 	let snapped = 0, skipped = 0;
 	flat.forEach(c => {
 		const off = commonBottom - bottomOf(c);
@@ -788,7 +800,7 @@ $("theme").onclick = () => {
 // Click on the atlas to pick a glyph.
 $("atlas").onclick = event => {
 	if (!hasGlyphs()) return;
-	const rect = event.target.getBoundingClientRect();
+	const rect = event.currentTarget.getBoundingClientRect();
 	const px = (event.clientX - rect.left) / rect.width * header.scaleW;
 	const py = (event.clientY - rect.top) / rect.height * header.scaleH;
 
@@ -853,9 +865,10 @@ addEventListener("keydown", event => {
 $("exp").onclick = () => { $("fnt").value = buildFntText(); };
 
 $("cp").onclick = () => {
-	$("fnt").value = buildFntText();
-	try { navigator.clipboard.writeText($("fnt").value); }
-	catch { $("fnt").select(); }
+	const fnt = /** @type {HTMLTextAreaElement} */ ($("fnt"));
+	fnt.value = buildFntText();
+	try { navigator.clipboard.writeText(fnt.value); }
+	catch { fnt.select(); }
 };
 
 $("dl").onclick = () => {
@@ -917,7 +930,11 @@ async function openFiles(list) {
 }
 
 $("open").onclick = () => $("files").click();
-$("files").onchange = e => { openFiles(e.target.files); e.target.value = ""; };
+$("files").onchange = e => {
+	const input = /** @type {HTMLInputElement} */ (e.currentTarget);
+	openFiles(input.files);
+	input.value = "";
+};
 
 addEventListener("dragover", e => {
 	if (e.dataTransfer && [...e.dataTransfer.types || []].includes("Files")) e.preventDefault();
