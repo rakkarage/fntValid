@@ -426,7 +426,7 @@
 	</header>
 	<main>
 		<div class="card">
-			<p class="cardname">Character <span class="sp"></span><span class="mut">← → switch glyph · ↑ ↓ nudge</span>
+			<p class="cardname">Character <span class="sp"></span><span class="mut">Arrows nudge glyph · Shift ×10 · Mod+←/→ select</span>
 			</p>
 			<div class="preview-box">
 				<div class="sc"><canvas id="anat"></canvas></div>
@@ -594,13 +594,18 @@
 		function drawGlyphAnatomy() {
 			const glyph = glyphs[selectedCode];
 			const ZOOM = 28;
-			const originX = 4 * ZOOM;
-			const originY = 1 * ZOOM;
+			const PAD_L = 4, PAD_T = 1, PAD_R = 1, PAD_B = 2; // padding in glyph-space units
 
-			// Trim canvas to content: left pad + glyph/advance extent + right pad for guide labels
-			const contentRight = Math.max(glyph.xa, glyph.xo + glyph.w, 1);
-			const tempW = (4 + contentRight + 10) * ZOOM;
-			const tempCtx = makeCanvasContext($("anat"), tempW, (lineHeight + 3) * ZOOM);
+			// Content bounds include the glyph at its current offsets as well as the
+			// fixed guides (top/base/lineHeight) and the advance box, so the preview
+			// grows whichever direction the glyph is nudged.
+			const contentLeft = Math.min(0, glyph.xo);
+			const contentRight = Math.max(1, glyph.xa, glyph.xo + glyph.w);
+			const contentTop = Math.min(0, glyph.yo, baseline);
+			const contentBottom = Math.max(0, lineHeight, glyph.yo + glyph.h, baseline);
+
+			// Measure guide-label width on a throwaway canvas.
+			const tempCtx = makeCanvasContext(document.createElement("canvas"), 1, 1);
 			tempCtx.font = "12px system-ui";
 			// label space: longest guide label like "base, bottom 16"
 			const labelPad = Math.ceil(
@@ -613,8 +618,11 @@
 				) / ZOOM
 			) + 1;
 
-			const W = Math.ceil((4 + contentRight + labelPad + 1) * ZOOM);
-			const H = (lineHeight + 2) * ZOOM;
+			// Map glyph-space (0,0) to (originX, originY) inside the canvas.
+			const originX = (PAD_L - contentLeft) * ZOOM;
+			const originY = (PAD_T - contentTop) * ZOOM;
+			const W = Math.ceil((PAD_L - contentLeft + contentRight + PAD_R + labelPad + 1) * ZOOM);
+			const H = Math.ceil((PAD_T - contentTop + contentBottom + PAD_B) * ZOOM);
 
 			const ctx = makeCanvasContext($("anat"), W, H);
 			ctx.font = "12px system-ui";
@@ -1190,24 +1198,44 @@
 			}
 		};
 
-		// Keyboard: arrow navigation and nudging.
+		// Keyboard: plain arrows nudge the selected glyph (xoffset/yoffset),
+		// Mod (Ctrl/Cmd) + arrows select a glyph instead.
 		addEventListener("keydown", event => {
 			const inField = /INPUT|TEXTAREA|SELECT/.test(event.target.tagName);
 			if (inField || !hasGlyphs()) return;
 
 			const codes = Object.keys(glyphs).map(Number);
 			const idx = codes.indexOf(selectedCode);
+			const mod = event.ctrlKey || event.metaKey;
+			const step = event.shiftKey ? 10 : 1;
+			const g = glyphs[selectedCode];
 
-			if (event.key === "ArrowRight") {
-				selectedCode = codes[Math.min(codes.length - 1, idx + 1)];
-			} else if (event.key === "ArrowLeft") {
-				selectedCode = codes[Math.max(0, idx - 1)];
-			} else if (event.key === "ArrowUp") {
-				glyphs[selectedCode].yo--;
-			} else if (event.key === "ArrowDown") {
-				glyphs[selectedCode].yo++;
+			if (mod) {
+				// Selection / navigation.
+				if (event.key === "ArrowRight") {
+					selectedCode = codes[Math.min(codes.length - 1, idx + 1)];
+				} else if (event.key === "ArrowLeft") {
+					selectedCode = codes[Math.max(0, idx - 1)];
+				} else if (event.key === "ArrowUp") {
+					selectedCode = codes[0];
+				} else if (event.key === "ArrowDown") {
+					selectedCode = codes[codes.length - 1];
+				} else {
+					return;
+				}
 			} else {
-				return;
+				// Nudge in glyph space: up/left negative, down/right positive.
+				if (event.key === "ArrowUp") {
+					g.yo -= step;
+				} else if (event.key === "ArrowDown") {
+					g.yo += step;
+				} else if (event.key === "ArrowLeft") {
+					g.xo -= step;
+				} else if (event.key === "ArrowRight") {
+					g.xo += step;
+				} else {
+					return;
+				}
 			}
 			event.preventDefault();
 			redrawAll();
