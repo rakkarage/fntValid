@@ -281,17 +281,7 @@
 		}
 
 		.preview-box canvas {
-			width: auto;
-			max-width: 100%;
-			height: auto
-		}
-
-		/* Fill the card when small, but never scale down: a downscaled 1px dashed
-		   box disappears. Larger canvases stay 1:1 and the .sc wrapper scrolls. */
-		#anat {
-			width: auto;
-			min-width: 100%;
-			max-width: none;
+			width: 100%;
 			height: auto
 		}
 
@@ -436,7 +426,8 @@
 	</header>
 	<main>
 		<div class="card">
-			<p class="cardname">Character <span class="sp"></span><span class="mut">Arrows nudge glyph · Shift ×10 · Mod+←/→ select</span>
+			<p class="cardname">Character <span class="sp"></span><span class="mut">Arrows nudge glyph · Shift ×10 ·
+					Mod+←/→ select</span>
 			</p>
 			<div class="preview-box">
 				<div class="sc"><canvas id="anat"></canvas></div>
@@ -529,13 +520,6 @@
 		/** Currently selected char code (65 = 'A' by default). */
 		let selectedCode = 65;
 
-		/**
-		 * Anatomy-preview viewport in glyph-space units: { code, left, right, top, bottom }.
-		 * Kept across nudges so the glyph moves inside a stable frame; only grows when
-		 * the glyph reaches the buffer. Rebuilt when a different glyph is selected.
-		 */
-		let anatView = null;
-
 		/** The atlas PNG. */
 		let atlasImage = new Image();
 
@@ -611,56 +595,34 @@
 		function drawGlyphAnatomy() {
 			const glyph = glyphs[selectedCode];
 			const ZOOM = 28;
-			const BUFFER = 4; // breathing room kept around the content, in glyph-space units
+			const PAD_X = 2, PAD_Y = 1; // symmetric, in glyph-space units
+			const MIN_W = 8;            // keeps tiny glyphs from making a sliver canvas
 
-			// Everything that must stay visible: the glyph at its current offsets,
-			// the guides (top/base/lineHeight), and the advance box from (0,0).
-			const req = {
-				left: Math.min(0, glyph.xo),
-				right: Math.max(1, glyph.xa, glyph.xo + glyph.w),
-				top: Math.min(0, glyph.yo, baseline),
-				bottom: Math.max(0, lineHeight, glyph.yo + glyph.h, baseline),
-			};
+			// Content bounds: the glyph at its current offsets, the fixed guides
+			// (top/base/lineHeight) and the advance box, so the preview grows in
+			// whichever direction the glyph is nudged.
+			const contentLeft = Math.min(0, glyph.xo);
+			const contentRight = Math.max(1, glyph.xa, glyph.xo + glyph.w);
+			const contentTop = Math.min(0, glyph.yo, baseline);
+			const contentBottom = Math.max(0, lineHeight, glyph.yo + glyph.h, baseline);
 
-			// anatView holds the canvas edges in glyph-space units. Reserve as little
-			// as possible: just BUFFER around the content so the canvas stays near
-			// 1:1 on screen (scaling it down makes the dashed box fade away). Guide
-			// labels sit at the right edge and may overlap the glyph if needed.
-			if (!anatView || anatView.code !== selectedCode) {
-				anatView = {
-					code: selectedCode,
-					left: req.left - BUFFER,
-					right: req.right + BUFFER,
-					top: req.top - BUFFER,
-					bottom: req.bottom + BUFFER,
-				};
-			} else {
-				// Hysteresis: grow when content reaches the buffer edge, shrink only
-				// when there is far more slack than needed. Both reset to BUFFER.
-				const shrinkAt = BUFFER * 2;
-				if (req.left < anatView.left || req.left - anatView.left > shrinkAt)
-					anatView.left = req.left - BUFFER;
-				if (req.right > anatView.right || anatView.right - req.right > shrinkAt)
-					anatView.right = req.right + BUFFER;
-				if (req.top < anatView.top || req.top - anatView.top > shrinkAt)
-					anatView.top = req.top - BUFFER;
-				if (req.bottom > anatView.bottom || anatView.bottom - req.bottom > shrinkAt)
-					anatView.bottom = req.bottom + BUFFER;
-			}
+			// Pad narrow content out to MIN_W and keep it centered.
+			const contentW = contentRight - contentLeft;
+			const span = Math.max(MIN_W, contentW);
+			const extra = span - contentW;
 
 			// Map glyph-space (0,0) to (originX, originY) inside the canvas.
-			const originX = -anatView.left * ZOOM;
-			const originY = -anatView.top * ZOOM;
-			const W = Math.ceil((anatView.right - anatView.left) * ZOOM);
-			const H = Math.ceil((anatView.bottom - anatView.top) * ZOOM);
+			const originX = (PAD_X - contentLeft + extra / 2) * ZOOM;
+			const originY = (PAD_Y - contentTop) * ZOOM;
+			const W = Math.ceil((span + PAD_X * 2) * ZOOM);
+			const H = Math.ceil((contentBottom - contentTop + PAD_Y * 2) * ZOOM);
 
 			const ctx = makeCanvasContext($("anat"), W, H);
-			ctx.font = "12px system-ui";
 
 			ctx.fillStyle = cssVar("--card");
 			ctx.fillRect(0, 0, W, H);
 
-			// faint advance × lineHeight box
+			// faint advance x lineHeight box
 			ctx.fillStyle = "rgba(120,120,200,.12)";
 			ctx.fillRect(originX, originY, glyph.xa * ZOOM, lineHeight * ZOOM);
 
@@ -674,81 +636,46 @@
 				glyph.h * ZOOM
 			);
 
-			// dashed bounding box
+			// dashed bounding box, inset half a pixel so it sits on the glyph edge
 			ctx.setLineDash([4, 3]);
+			ctx.lineWidth = 1;
 			ctx.strokeStyle = cssVar("--mut");
 			ctx.strokeRect(
 				originX + glyph.xo * ZOOM + 0.5,
 				originY + glyph.yo * ZOOM + 0.5,
-				glyph.w * ZOOM,
-				glyph.h * ZOOM
+				glyph.w * ZOOM - 1,
+				glyph.h * ZOOM - 1
 			);
 			ctx.setLineDash([]);
 
 			const glyphBottom = glyph.yo + glyph.h;
 
-			const drawGuide = (yInGlyphSpace, color, labelParts, labelX) => {
-				const gy = originY + yInGlyphSpace * ZOOM;
-				ctx.strokeStyle = color;
-				ctx.lineWidth = 2;
-				ctx.beginPath();
-				ctx.moveTo(ZOOM, gy);
-				ctx.lineTo(W - ZOOM, gy);
-				ctx.stroke();
-
-				let px = labelX;
-				let py = gy - 3;
-				ctx.font = "12px system-ui";
-				for (const part of labelParts) {
-					ctx.fillStyle = part.col;
-					ctx.fillText(part.t, px, py);
-					px += ctx.measureText(part.t).width;
-				}
-			};
-
-			// guides, merged when they share the same y
+			// Guide lines span the full canvas width. Drawn in this order so that
+			// when several share a y, base (green) ends up on top.
 			const guides = [
-				{ y: 0, name: "top", value: 0, col: cssVar("--r") },
-				{ y: baseline, name: "base", value: baseline, col: cssVar("--g") },
-				{ y: lineHeight, name: "lineHeight", value: lineHeight, col: cssVar("--b") },
-				{ y: glyphBottom, name: "bottom", value: glyphBottom, col: cssVar("--o") },
+				{ y: glyphBottom, col: cssVar("--o") },
+				{ y: lineHeight, col: cssVar("--b") },
+				{ y: 0, col: cssVar("--r") },
+				{ y: baseline, col: cssVar("--g") },
 			];
-
-			const mergedGuides = [];
+			ctx.lineWidth = 2;
 			for (const g of guides) {
-				const sameY = mergedGuides.find(m => m.y === g.y);
-				if (sameY) sameY.items.push(g);
-				else mergedGuides.push({ y: g.y, value: g.value, items: [g] });
-			}
-
-			for (const group of mergedGuides) {
-				const lineColor = group.items.length > 1
-					? (group.items.find(i => i.name === "base") || group.items[0]).col
-					: group.items[0].col;
-
-				const parts = [];
-				group.items.forEach((it, i) => {
-					if (i) parts.push({ t: ", ", col: it.col });
-					parts.push({ t: it.name, col: it.col });
-				});
-				parts.push({ t: " " + group.value, col: lineColor });
-
-				// place labels to the right of content, clamped inside canvas
-				const labelText = parts.map(p => p.t).join("");
-				const labelW = ctx.measureText(labelText).width;
-				const labelX = W - labelW - 4;
-				drawGuide(group.y, lineColor, parts, labelX);
+				const gy = originY + g.y * ZOOM;
+				ctx.strokeStyle = g.col;
+				ctx.beginPath();
+				ctx.moveTo(0, gy);
+				ctx.lineTo(W, gy);
+				ctx.stroke();
 			}
 
 			// vertical xadvance line
 			ctx.strokeStyle = cssVar("--p");
-			ctx.lineWidth = 2;
 			ctx.beginPath();
 			ctx.moveTo(originX + glyph.xa * ZOOM, originY);
 			ctx.lineTo(originX + glyph.xa * ZOOM, originY + lineHeight * ZOOM);
 			ctx.stroke();
 
-			// side readouts
+			// legend readouts (HTML overlay / row beneath the canvas)
 			const descenderDepth = glyphBottom - baseline;
 			$("vb").textContent = baseline;
 			$("vl").textContent = lineHeight;
@@ -762,6 +689,29 @@
 				`<b style="font-size:1.6em">\u201C${charFromCode(selectedCode)}\u201D</b> ` +
 				`<span class="mut">id ${selectedCode}</span>`;
 		}
+
+		/* ---------------------------------------------------------------------
+		   Companion HTML/CSS changes (so nothing overlays the canvas any more)
+		
+		   1) HTML: move the glyph label into the card title row. Replace
+				<div class="overlay overlay-top" id="anaInfo"></div>
+			  with nothing, and change the title line to:
+				<p class="cardname">Character <span id="anaInfo"></span> <span class="sp"></span>...
+		
+		   2) CSS: make the legend a row under the canvas instead of an overlay.
+			  Replace the .overlay / .overlay-top / .overlay-bottom rules with:
+		
+				.overlay-bottom {
+				  display: flex; flex-wrap: wrap; gap: 4px 14px;
+				  margin-top: 8px; font-size: .85em;
+				}
+				.overlay-bottom p { margin: 0; }
+		
+			  and move .overlay-bottom outside .preview-box (just after it).
+		
+		   3) showEmptyState()/showOverlays(): drop the .overlay-top lines;
+			  keep the .overlay-bottom ones (they still toggle the legend).
+		   --------------------------------------------------------------------- */
 
 		function drawAtlasOverview() {
 			const ZOOM = 4;
@@ -1139,7 +1089,6 @@
 			kerningLines = kernings;
 
 			selectedCode = glyphs[65] ? 65 : Number(Object.keys(glyphs)[0]);
-			anatView = null;
 
 			if (header.pageFile && !skipImageLoad) {
 				const dir = basePath ? basePath.replace(/[^/]*$/, "") : "";
