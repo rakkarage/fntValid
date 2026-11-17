@@ -707,29 +707,6 @@
 				`<span class="mut">id ${selectedCode}</span>`;
 		}
 
-		/* ---------------------------------------------------------------------
-		   Companion HTML/CSS changes (so nothing overlays the canvas any more)
-		
-		   1) HTML: move the glyph label into the card title row. Replace
-				<div class="overlay overlay-top" id="anaInfo"></div>
-			  with nothing, and change the title line to:
-				<p class="cardname">Character <span id="anaInfo"></span> <span class="sp"></span>...
-		
-		   2) CSS: make the legend a row under the canvas instead of an overlay.
-			  Replace the .overlay / .overlay-top / .overlay-bottom rules with:
-		
-				.overlay-bottom {
-				  display: flex; flex-wrap: wrap; gap: 4px 14px;
-				  margin-top: 8px; font-size: .85em;
-				}
-				.overlay-bottom p { margin: 0; }
-		
-			  and move .overlay-bottom outside .preview-box (just after it).
-		
-		   3) showEmptyState()/showOverlays(): drop the .overlay-top lines;
-			  keep the .overlay-bottom ones (they still toggle the legend).
-		   --------------------------------------------------------------------- */
-
 		function drawAtlasOverview() {
 			const ZOOM = 4;
 			const ctx = makeCanvasContext($("atlas"), header.scaleW * ZOOM, header.scaleH * ZOOM);
