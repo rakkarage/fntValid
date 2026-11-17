@@ -483,6 +483,7 @@
 				<button class="pri" id="fix"
 					title="Snap baseline and descenders, apply top gap, fit lineHeight">Auto-fix</button>
 			</div>
+			<p class="mut" id="fixlog"></p>
 			<div id="chk"></div>
 		</div>
 
@@ -1020,55 +1021,89 @@
 		}
 
 		function autoFix() {
-			// Lossless and idempotent, and the bottom-row math below assumes tight
-			// rects — so make it part of the fix instead of a separate step.
-			// Skipped automatically when the atlas pixels can't be read.
+			// Lossless; the math below assumes tight rects.
 			if (needsTrim()) trimGlyphs();
 
 			const descenderChars = $("dset").value;
 			const topGap = Number($("top").value);
 			const bottomGap = Number($("gap").value);
 			const codes = Object.keys(glyphs).map(Number);
+			const log = [];
 
-			const isFlat = code => {
-				const ch = charFromCode(code);
+			const AGREE = 0.6;      // share of flat glyphs that must agree to call it a uniform shift
+			const SNAP_TOL = 1;     // per-glyph snap only for errors this small
+			const XHEIGHT = "acemnorsuvwxz";
+			const XDESC = "gpqy";   // descenders whose top is the x-height
+
+			const bottomOf = c => glyphs[c].yo + glyphs[c].h;
+			const isFlat = c => {
+				const ch = charFromCode(c);
 				return /[A-Za-z0-9]/.test(ch) && !descenderChars.includes(ch);
 			};
+			const flat = codes.filter(isFlat);
+			if (!flat.length) return;
 
-			// 1. Snap flat glyphs to a common baseline.
-			const commonBottom = mostCommonValue(
-				codes.filter(isFlat).map(code => glyphs[code].yo + glyphs[code].h)
-			);
-			if (commonBottom == null) return;
-			codes.filter(isFlat).forEach(code => {
-				glyphs[code].yo = commonBottom - glyphs[code].h;
+			// 0. Uniform offset? Move everything once instead of glyph by glyph.
+			{
+				const bottoms = flat.map(bottomOf);
+				const modal = mostCommonValue(bottoms);
+				const agree = bottoms.filter(b => b === modal).length / bottoms.length;
+				if (agree >= AGREE && modal !== baseline) {
+					const d = baseline - modal;
+					const highest = Math.min(...codes.map(c => glyphs[c].yo));
+					const pct = Math.round(agree * 100);
+					if (highest + d === topGap) {
+						codes.forEach(c => { glyphs[c].yo += d; });
+						log.push(`Shifted all glyphs by ${d} (${pct}% of flat glyphs agreed on bottom ${modal}, base is ${baseline}).`);
+					} else if (highest === topGap) {
+						log.push(`Base ${baseline} \u2192 ${modal} (${pct}% of flat glyphs end at ${modal}, top already at gap).`);
+						baseline = modal;
+					} else {
+						log.push(`Flat glyphs end at ${modal} but base is ${baseline}, and neither shift nor base change fixes the top edge. Left alone.`);
+					}
+				}
+			}
+
+			// 1. Snap near-misses to the common baseline; leave big deviations (f J Q Y) for review.
+			const commonBottom = mostCommonValue(flat.map(bottomOf));
+			let snapped = 0, skipped = 0;
+			flat.forEach(c => {
+				const off = commonBottom - bottomOf(c);
+				if (off === 0) return;
+				if (Math.abs(off) <= SNAP_TOL) { glyphs[c].yo += off; snapped++; }
+				else skipped++;
 			});
+			if (snapped) log.push(`Snapped ${snapped} glyph(s) to the baseline.`);
+			if (skipped) log.push(`${skipped} flat glyph(s) are far off the baseline and were left for review.`);
 
-			// 2. Snap letter-glyph tops to the lowercase non-descender top.
+			// 2. Descender tops: x-height descenders match x-height; j matches i.
 			const letterTop = mostCommonValue(
-				codes
-					.filter(code => isFlat(code) && /[a-z]/.test(charFromCode(code)))
-					.map(code => glyphs[code].yo)
+				codes.filter(c => XHEIGHT.includes(charFromCode(c))).map(c => glyphs[c].yo)
 			);
 			if (letterTop != null) {
-				codes.forEach(code => {
-					const ch = charFromCode(code);
-					if (!/[A-Za-z]/.test(ch) || !descenderChars.includes(ch)) return;
-					if (ch === "j" && glyphs[105]) glyphs[code].yo = glyphs[105].yo; // match i
-					else glyphs[code].yo = letterTop;
+				codes.forEach(c => {
+					const ch = charFromCode(c);
+					if (!descenderChars.includes(ch)) return;
+					if (ch === "j" && glyphs[105]) glyphs[c].yo = glyphs[105].yo;
+					else if (XDESC.includes(ch)) glyphs[c].yo = letterTop;
 				});
 			}
 
-			// 3. Shift so the highest glyph lands at topGap.
-			const highestY = Math.min(...codes.map(code => glyphs[code].yo));
+			// 3. Highest glyph to the top gap.
+			const highestY = Math.min(...codes.map(c => glyphs[c].yo));
 			const shift = topGap - highestY;
-			codes.forEach(code => { glyphs[code].yo += shift; });
+			if (shift) {
+				codes.forEach(c => { glyphs[c].yo += shift; });
+				log.push(`Moved all glyphs by ${shift} to meet the top gap.`);
+			}
 			baseline = commonBottom + shift;
 
 			// 4. Fit lineHeight.
-			lineHeight =
-				Math.max(...codes.map(code => glyphs[code].yo + glyphs[code].h)) + bottomGap;
+			const oldLH = lineHeight;
+			lineHeight = Math.max(...codes.map(bottomOf)) + bottomGap;
+			if (lineHeight !== oldLH) log.push(`lineHeight ${oldLH} \u2192 ${lineHeight}.`);
 
+			$("fixlog").textContent = log.join(" ") || "Nothing to fix.";
 			redrawAll();
 		}
 
