@@ -1,6 +1,4 @@
-// =====================================================================
-// STATE
-// =====================================================================
+//#region 🧠 State
 
 /** @typedef {{ x:number, y:number, w:number, h:number, xo:number, yo:number, xa:number }} Glyph */
 /** @typedef {{ [code:number]: Glyph }} CharMap */
@@ -80,9 +78,9 @@ const charFromCode = code => String.fromCharCode(code);
 const glyphLabel = code => code === 32 ? "\u2423" : charFromCode(code);
 const hasGlyphs = () => Object.keys(glyphs).length > 0;
 
-// =====================================================================
-// RENDERING
-// =====================================================================
+//#endregion
+
+//#region 🎨 Rendering
 
 /** Orchestrates a full redraw. Each step is in its own function below. */
 function redrawAll() {
@@ -287,9 +285,9 @@ function syncFormFields() {
 	$("fname").textContent = `${header.face} \u00B7 ${header.size}px`;
 }
 
-// =====================================================================
-// INK BOX / TRIM
-// =====================================================================
+//#endregion
+
+//#region 📐 Ink Box / Trim
 
 /** Drop cached ink bounds (call whenever the atlas or a rect changes;
  *  nudging xoffset/yoffset does not affect them). */
@@ -366,9 +364,9 @@ function trimAll() {
 	redrawAll();
 }
 
-// =====================================================================
-// CHECKS
-// =====================================================================
+//#endregion
+
+//#region ✅ Checks
 
 function runChecks() {
 	inkReadFailed = false;
@@ -531,9 +529,9 @@ function runChecks() {
 	pill.className = "pill" + (totalFailingRules ? "" : " ok");
 }
 
-// =====================================================================
-// AUTO-FIX
-// =====================================================================
+//#endregion
+
+//#region 🔧 Auto-Fix
 
 /** @param {number[]} values @returns {number|null} */
 function mostCommonValue(values) {
@@ -637,9 +635,9 @@ function autoFix() {
 	redrawAll();
 }
 
-// =====================================================================
-// EXPORT
-// =====================================================================
+//#endregion
+
+//#region 📤 Export
 
 /**
  * @param {string} tag
@@ -707,9 +705,9 @@ function buildFntText() {
 	return out;
 }
 
-// =====================================================================
-// PARSER
-// =====================================================================
+//#endregion
+
+//#region 🔍 Parser
 
 /**
  * @param {string} text
@@ -806,9 +804,9 @@ function parseFnt(text, basePath, skipImageLoad) {
 	return true;
 }
 
-// =====================================================================
-// EVENT HANDLERS
-// =====================================================================
+//#endregion
+
+//#region ⚡ Event Handlers
 
 /**
  * Editors that mutate a single glyph field or the baseline/lineHeight.
@@ -935,9 +933,9 @@ addEventListener("keydown", event => {
 	redrawAll();
 });
 
-// =====================================================================
-// FILE I/O
-// =====================================================================
+//#endregion
+
+//#region 💾 File I/O
 
 $("exp").onclick = () => { $textarea("fnt").value = buildFntText(); };
 
@@ -1030,9 +1028,9 @@ $textarea("fnt").addEventListener("paste", () => setTimeout(() => {
 	parseFnt($textarea("fnt").value, null, false);
 }));
 
-// =====================================================================
-// DEMOS
-// =====================================================================
+//#endregion
+
+//#region 🎮 Demos
 
 /** @param {string} path @param {string} displayName */
 async function loadDemo(path, displayName) {
@@ -1062,9 +1060,11 @@ $("demo4").onclick = () => loadDemo("Font/Cairo16.fnt", "Cairo16");
 $("demo5").onclick = () => loadDemo("Font/Ref16.fnt", "Ref16");
 $("demo6").onclick = () => loadDemo("Font/lsans-15.fnt", "lsans-15");
 
-// =====================================================================
-// BOOT
-// =====================================================================
+//#endregion
+
+//#region 🚀 Boot
 
 atlasImage.onload = () => { invalidateInkCache(); redrawAll(); };
 redrawAll();
+
+//#endregion

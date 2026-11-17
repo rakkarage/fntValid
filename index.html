@@ -6,7 +6,6 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 	<title>fntValid — BMFont metric validator</title>
 	<script>
-		// Restore the saved theme before first paint to avoid a flash.
 		try {
 			const saved = localStorage.getItem("theme");
 			if (saved === "light" || saved === "dark") document.documentElement.dataset.theme = saved;
@@ -17,134 +16,132 @@
 
 <body>
 	<header class="topbar">
-			<div class="brand">
-				<div class="brand-mark">fnt<b>Valid</b></div>
-				<h1><span id="fname"></span></h1>
-			</div>
-			<div class="topbar-actions">
-				<span class="pill" id="sum">No font loaded</span>
-				<button id="theme" title="Toggle light / dark theme">Theme</button>
-			</div>
-		</header>
+		<div class="brand">
+			<div class="brand-mark">fnt<b>Valid</b></div>
+			<h1><span id="fname"></span></h1>
+		</div>
+		<div class="topbar-actions">
+			<span class="pill" id="sum">No font loaded</span>
+			<button id="theme" title="Toggle light / dark theme">Theme</button>
+		</div>
+	</header>
 
-		<main class="workspace">
-			<!-- ===================== PRIMARY / VISUALIZATION ===================== -->
-			<section class="column" aria-label="Visualization">
-				<article class="card">
-					<div class="card-head">
-						<h2>Character</h2>
-						<span class="sp"></span>
-						<span class="hint">Arrows nudge glyph · Shift ×10 · Mod+←/→ select</span>
+	<main class="workspace">
+		<section class="column" aria-label="Visualization">
+			<article class="card">
+				<div class="card-head">
+					<h2>Character</h2>
+					<span class="sp"></span>
+					<span class="hint">Arrows nudge glyph · Shift x10 · Mod+←/→ select</span>
+				</div>
+				<div class="preview-box">
+					<div class="sc"><canvas id="anat"></canvas></div>
+					<div class="overlay overlay-top" id="anaInfo"></div>
+					<div class="overlay overlay-bottom">
+						<p><code>0</code> top<span class="dot" style="background:var(--r)"></span></p>
+						<p><code id="vb"></code> base<span class="dot" style="background:var(--g)"></span></p>
+						<p><code id="vl"></code> lineHeight<span class="dot" style="background:var(--b)"></span></p>
+						<p><span id="vbd" style="font-weight:700"></span> <code id="vbot"></code> bottom<span
+								class="dot" style="background:var(--o)"></span></p>
+						<p><code id="xa"></code> xadvance<span class="dot" style="background:var(--p)"></span></p>
 					</div>
-					<div class="preview-box">
-						<div class="sc"><canvas id="anat"></canvas></div>
-						<div class="overlay overlay-top" id="anaInfo"></div>
-						<div class="overlay overlay-bottom">
-							<p><code>0</code> top<span class="dot" style="background:var(--r)"></span></p>
-							<p><code id="vb"></code> base<span class="dot" style="background:var(--g)"></span></p>
-							<p><code id="vl"></code> lineHeight<span class="dot" style="background:var(--b)"></span></p>
-							<p><span id="vbd" style="font-weight:700"></span> <code id="vbot"></code> bottom<span
-									class="dot" style="background:var(--o)"></span></p>
-							<p><code id="xa"></code> xadvance<span class="dot" style="background:var(--p)"></span></p>
-						</div>
-					</div>
-				</article>
+				</div>
+			</article>
 
-				<article class="card">
-					<div class="card-head">
-						<h2>Atlas</h2>
-						<span class="sp"></span>
-						<span class="hint">Click the atlas or a glyph to select · yellow glyphs fail a check</span>
-					</div>
-					<div class="sc"><canvas id="atlas"></canvas></div>
-					<div id="grid"></div>
-					<p id="selinfo" class="mut"></p>
-				</article>
-			</section>
+			<article class="card">
+				<div class="card-head">
+					<h2>Atlas</h2>
+					<span class="sp"></span>
+					<span class="hint">Click the atlas or a glyph to select · yellow glyphs fail a check</span>
+				</div>
+				<div class="sc"><canvas id="atlas"></canvas></div>
+				<div id="grid"></div>
+				<p id="selinfo" class="mut"></p>
+			</article>
+		</section>
 
-			<!-- ===================== SECONDARY / CONTROLS ===================== -->
-			<aside class="column" aria-label="Controls">
-				<article class="card" id="checkcard">
-					<div class="card-head">
-						<h2>Checks</h2>
-						<span class="sp"></span>
-						<button id="fix" class="pri"
-							title="Snap baseline and descenders, apply top gap, fit lineHeight">Auto-fix</button>
-					</div>
-					<div class="field-row">
-						<label title="True descenders: tops snap to x-height, tails must clear the baseline">descenders
-							<input id="dset" value="gjpqy" size="6"></label>
-						<label
-							title="Extra glyphs allowed to hang below the baseline (e.g. Q, J); not snapped to x-height">may
-							hang <input id="hangset" value="QJ" size="6"></label>
-						<label>top gap <input type="number" id="top" value="0"></label>
-						<label>bottom gap <input type="number" id="gap" value="0"></label>
-					</div>
-					<p class="mut" id="fixlog"></p>
-					<div id="chk"></div>
-				</article>
+		<aside class="column" aria-label="Controls">
+			<article class="card" id="checkcard">
+				<div class="card-head">
+					<h2>Checks</h2>
+					<span class="sp"></span>
+					<button id="fix" class="pri"
+						title="Snap baseline and descenders, apply top gap, fit lineHeight">Auto-fix</button>
+				</div>
+				<div class="field-row">
+					<label title="True descenders: tops snap to x-height, tails must clear the baseline">descenders
+						<input id="dset" value="gjpqy" size="6"></label>
+					<label
+						title="Extra glyphs allowed to hang below the baseline (e.g. Q, J); not snapped to x-height">may
+						hang <input id="hangset" value="QJ" size="6"></label>
+					<label>top gap <input type="number" id="top" value="0"></label>
+					<label>bottom gap <input type="number" id="gap" value="0"></label>
+				</div>
+				<p class="mut" id="fixlog"></p>
+				<div id="chk"></div>
+			</article>
 
-				<article class="card" id="settings">
-					<div class="card-head">
-						<h2>Settings</h2>
-					</div>
-					<div class="field-row">
-						<label>yoffset <input type="number" id="iyo"></label>
-						<label>xoffset <input type="number" id="ixo"></label>
-						<label>xadvance <input type="number" id="ixa"></label>
-					</div>
-					<hr>
-					<div class="field-row">
-						<select id="grp" aria-label="Glyph group">
-							<option value="all">all</option>
-							<option value="up">A-Z</option>
-							<option value="low">a-z</option>
-							<option value="desc">descenders (from dset)</option>
-							<option value="nodesc">a-z no descenders</option>
-							<option value="dig">0-9</option>
-							<option value="pun">punctuation</option>
-						</select>
-						<label>Δy <input type="number" id="dy" value="-1"></label>
-						<button id="apply">Apply</button>
-					</div>
-					<hr>
-					<div class="field-row">
-						<label>base <input type="number" id="ibase"></label>
-						<label>lineHeight <input type="number" id="ilh"></label>
-					</div>
-				</article>
+			<article class="card" id="settings">
+				<div class="card-head">
+					<h2>Settings</h2>
+				</div>
+				<div class="field-row">
+					<label>yoffset <input type="number" id="iyo"></label>
+					<label>xoffset <input type="number" id="ixo"></label>
+					<label>xadvance <input type="number" id="ixa"></label>
+				</div>
+				<hr>
+				<div class="field-row">
+					<select id="grp" aria-label="Glyph group">
+						<option value="all">all</option>
+						<option value="up">A-Z</option>
+						<option value="low">a-z</option>
+						<option value="desc">descenders (from dset)</option>
+						<option value="nodesc">a-z no descenders</option>
+						<option value="dig">0-9</option>
+						<option value="pun">punctuation</option>
+					</select>
+					<label>Δy <input type="number" id="dy" value="-1"></label>
+					<button id="apply">Apply</button>
+				</div>
+				<hr>
+				<div class="field-row">
+					<label>base <input type="number" id="ibase"></label>
+					<label>lineHeight <input type="number" id="ilh"></label>
+				</div>
+			</article>
 
-				<article class="card" id="filecard">
-					<div class="card-head">
-						<h2>Font file</h2>
-						<span class="sp"></span>
-						<span class="key">drop files anywhere</span>
-					</div>
-					<textarea id="fnt" rows="7" spellcheck="false" placeholder="Paste .fnt here"></textarea>
-					<div class="btns">
-						<button id="open" class="pri">Open .fnt + .png…</button>
-						<input type="file" id="files" accept=".fnt,.txt,.png,image/png" multiple hidden>
-						<button id="load">Load .fnt</button>
-						<button id="exp">Export</button>
-						<button id="cp">Copy</button>
-						<button id="dl">Download .fnt</button>
-					</div>
-					<p class="mut" id="hint">Drop a .fnt and/or its .png anywhere on this page, or open both together.
-					</p>
-					<hr>
-					<div class="card-head" style="margin-bottom:6px">
-						<h2 style="font-size:.72rem">Demos</h2>
-					</div>
-					<div class="btns" style="margin-top:0">
-						<button id="demo1">Super12</button>
-						<button id="demo2">Venice16</button>
-						<button id="demo3">Alagard16</button>
-						<button id="demo4">Cairo16</button>
-						<button id="demo5">Ref16</button>
-						<button id="demo6">lsans-15</button>
-					</div>
-				</article>
-			</aside>
+			<article class="card" id="filecard">
+				<div class="card-head">
+					<h2>Font file</h2>
+					<span class="sp"></span>
+					<span class="key">drop files anywhere</span>
+				</div>
+				<textarea id="fnt" rows="7" spellcheck="false" placeholder="Paste .fnt here"></textarea>
+				<div class="btns">
+					<button id="open" class="pri">Open .fnt + .png…</button>
+					<input type="file" id="files" accept=".fnt,.txt,.png,image/png" multiple hidden>
+					<button id="load">Load .fnt</button>
+					<button id="exp">Export</button>
+					<button id="cp">Copy</button>
+					<button id="dl">Download .fnt</button>
+				</div>
+				<p class="mut" id="hint">Drop a .fnt and/or its .png anywhere on this page, or open both together.
+				</p>
+				<hr>
+				<div class="card-head" style="margin-bottom:6px">
+					<h2 style="font-size:.72rem">Demos</h2>
+				</div>
+				<div class="btns" style="margin-top:0">
+					<button id="demo1">Super12</button>
+					<button id="demo2">Venice16</button>
+					<button id="demo3">Alagard16</button>
+					<button id="demo4">Cairo16</button>
+					<button id="demo5">Ref16</button>
+					<button id="demo6">lsans-15</button>
+				</div>
+			</article>
+		</aside>
 	</main>
 
 	<script src="app.js"></script>
