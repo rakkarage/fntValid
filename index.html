@@ -4,7 +4,7 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-	<title>fntValid — BMFont metric validator</title>
+	<title>fntValid</title>
 	<script>
 		try {
 			const saved = localStorage.getItem("theme");
@@ -12,6 +12,7 @@
 		} catch (e) { }
 	</script>
 	<link rel="stylesheet" href="styles.css">
+	<link rel="stylesheet" href="guide.css">
 </head>
 
 <body>
@@ -175,7 +176,9 @@
 		</aside>
 	</main>
 
+	<!-- guide.js extends app.js (reads its globals) — keep this order -->
 	<script src="app.js"></script>
+	<script src="guide.js"></script>
 </body>
 
 </html>

@@ -4,5 +4,7 @@
 		"noUnusedLocals": true,
 		"noUnusedParameters": true
 	},
-	"include": ["app.js"]
+	"include": [
+		"app.js"
+	]
 }

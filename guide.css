@@ -1,0 +1,264 @@
+	/* #region 📖 Guide infographics */
+	/* Styles for guide.js — load after styles.css (uses its theme variables). */
+	#guideBtn {
+		color: var(--acc);
+		border-color: color-mix(in srgb, var(--acc) 45%, var(--line))
+	}
+
+	dialog#guide {
+		width: min(880px, calc(100vw - 32px));
+		max-height: min(88vh, 920px);
+		margin: auto;
+		padding: 0;
+		overflow: hidden;
+		color: var(--ink);
+		background: var(--card);
+		border: 1px solid var(--line);
+		border-radius: var(--radius);
+		box-shadow: 0 24px 70px rgba(8, 12, 20, .35)
+	}
+
+	dialog#guide::backdrop {
+		background: rgba(8, 12, 20, .55);
+		backdrop-filter: blur(3px);
+		-webkit-backdrop-filter: blur(3px)
+	}
+
+	dialog#guide .card-head {
+		margin: 0;
+		padding: 14px 18px 12px;
+		border-bottom: 1px solid var(--line)
+	}
+
+	.gd-tabs {
+		display: flex;
+		gap: 6px;
+		flex-wrap: wrap;
+		padding: 10px 18px 0
+	}
+
+	.gd-tabs button.on {
+		background: var(--acc);
+		color: #fff;
+		border-color: var(--acc)
+	}
+
+	:root:not([data-theme="light"]) .gd-tabs button.on {
+		color: #11131a
+	}
+
+	#gdBody {
+		max-height: calc(88vh - 130px);
+		padding: 14px 18px 20px;
+		overflow: auto
+	}
+
+	#gdBody>p:first-child {
+		margin-top: 0
+	}
+
+	.gd-mine {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 6px;
+		padding: 10px;
+		margin: 0 0 14px;
+		background: var(--bg);
+		border: 1px solid var(--line);
+		border-radius: var(--radius-sm)
+	}
+
+	.gd-mine>b {
+		flex: 1 0 100%;
+		font-size: .74rem;
+		letter-spacing: .08em;
+		text-transform: uppercase;
+		color: var(--mut)
+	}
+
+	.gd-mine .key b {
+		color: var(--ink)
+	}
+
+	.gd-split {
+		display: grid;
+		grid-template-columns: minmax(0, 1.4fr) minmax(220px, 1fr);
+		gap: 18px;
+		align-items: start
+	}
+
+	.gd-list {
+		margin: 0;
+		padding-left: 18px
+	}
+
+	.gd-list li {
+		margin: 0 0 9px
+	}
+
+	.gd-list li:last-child {
+		margin-bottom: 0
+	}
+
+	.gd-list b {
+		color: var(--ink)
+	}
+
+	.gd-list code {
+		white-space: nowrap
+	}
+
+	.gd-cards {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(165px, 1fr));
+		gap: 10px;
+		margin-top: 14px
+	}
+
+	.gd-cards figure {
+		margin: 0;
+		padding: 10px;
+		background: var(--bg);
+		border: 1px solid var(--line);
+		border-radius: var(--radius-sm)
+	}
+
+	.gd-cards figcaption {
+		margin-top: 8px;
+		font-size: .76rem;
+		line-height: 1.35;
+		color: var(--mut)
+	}
+
+	.gd-rule>b {
+		display: block;
+		font-size: .82rem
+	}
+
+	.gd-rule>.mut {
+		display: block;
+		margin-top: 2px;
+		font-size: .74rem
+	}
+
+	.gd-pair {
+		display: flex;
+		gap: 8px;
+		margin-top: 8px
+	}
+
+	.gd-pair>span {
+		flex: 1;
+		min-width: 0;
+		text-align: center
+	}
+
+	.gd-pair em {
+		display: block;
+		font-style: normal;
+		font-size: .72rem;
+		font-weight: 700
+	}
+
+	/* the advance-rule card holds two wide horizontal minis */
+	.gd-rule:last-child {
+		grid-column: span 2
+	}
+
+	.gsvg,
+	.gmini {
+		display: block;
+		height: auto
+	}
+
+	.gsvg {
+		width: 100%
+	}
+
+	.gmini {
+		width: 100%;
+		max-width: 96px
+	}
+
+	.gmini.h {
+		max-width: 140px
+	}
+
+	.gt {
+		fill: var(--ink);
+		font: 10px/1 system-ui, -apple-system, Segoe UI, sans-serif
+	}
+
+	.gsvg .zA {
+		fill: color-mix(in srgb, var(--r) 9%, transparent)
+	}
+
+	.gsvg .zD {
+		fill: color-mix(in srgb, var(--o) 9%, transparent)
+	}
+
+	.gsvg .bf,
+	.gmini .bf {
+		fill: color-mix(in srgb, var(--g) 45%, transparent);
+		stroke: var(--g);
+		stroke-width: 1.5
+	}
+
+	.gsvg .bt {
+		fill: color-mix(in srgb, var(--o) 45%, transparent);
+		stroke: var(--o);
+		stroke-width: 1.5
+	}
+
+	.gsvg .bm,
+	.gmini .bm {
+		fill: color-mix(in srgb, var(--p) 38%, transparent);
+		stroke: var(--p);
+		stroke-width: 1.5
+	}
+
+	.gmini .bb {
+		fill: color-mix(in srgb, var(--r) 45%, transparent);
+		stroke: var(--r);
+		stroke-width: 1.5
+	}
+
+	.gmini .bpad {
+		fill: color-mix(in srgb, var(--y) 12%, transparent);
+		stroke: var(--y);
+		stroke-width: 1.5;
+		stroke-dasharray: 3 2
+	}
+
+	.sw {
+		display: inline-block;
+		width: 11px;
+		height: 11px;
+		border: 1px solid;
+		border-radius: 3px;
+		vertical-align: -1px
+	}
+
+	.sw.bf {
+		background: color-mix(in srgb, var(--g) 45%, transparent);
+		border-color: var(--g)
+	}
+
+	.sw.bt {
+		background: color-mix(in srgb, var(--o) 45%, transparent);
+		border-color: var(--o)
+	}
+
+	.sw.bm {
+		background: color-mix(in srgb, var(--p) 38%, transparent);
+		border-color: var(--p)
+	}
+
+	@media (max-width: 720px) {
+		.gd-split {
+			grid-template-columns: 1fr
+		}
+	}
+
+	/* #endregion */

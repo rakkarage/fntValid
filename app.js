@@ -1128,7 +1128,7 @@ $("demo5").onclick = () => loadDemo("Font/Venice16.fnt", "Venice16");
 $("demo6").onclick = () => loadDemo("Font/VeniceRegen16.fnt", "VeniceRegen16");
 $("demo7").onclick = () => loadDemo("Font/VeniceRegen17.fnt", "VeniceRegen17");
 $("demo8").onclick = () => loadDemo("Font/VeniceRegen18.fnt", "VeniceRegen18");
-$("demo9").onclick = () => loadDemo("Font/VeniceRegen19.fnt", "VeniceRegen19");
+$("demo9").onclick = () => loadDemo("Font/VeniceRegen20.fnt", "VeniceRegen20");
 $("demo10").onclick = () => loadDemo("Font/VeniceRegen21.fnt", "VeniceRegen21");
 $("demo11").onclick = () => loadDemo("Font/Alagard16.fnt", "Alagard16");
 $("demo12").onclick = () => loadDemo("Font/Cairo16.fnt", "Cairo16");
