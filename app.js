@@ -688,7 +688,7 @@ function autoFix() {
 		if (Math.abs(off) <= SNAP_TOL) { glyphs[c].yo += off; snapped++; }
 		else if (bottomOf(c) > commonBottom + SNAP_TOL) {
 			const ch = charFromCode(c);
-			if (!hangInput.value.includes(ch)) newHangers.push(ch);
+			if (!hangingChars.includes(ch)) newHangers.push(ch);
 		} else skipped++;
 	});
 	if (snapped) log.push(`Snapped ${snapped} glyph(s) to the baseline.`);
