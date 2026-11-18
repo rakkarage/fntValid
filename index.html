@@ -36,15 +36,31 @@
 				</div>
 				<div class="preview-box">
 					<div class="sc"><canvas id="anat"
-							title="Dashed box = glyph rect at (xoffset, yoffset), size width × height. Faint fill = one advance × lineHeight cell. Colored guides are labeled in the legend."></canvas></div>
+							title="Dashed box = glyph rect at (xoffset, yoffset), size width × height. Faint fill = one advance × lineHeight cell. Colored guides are labeled in the legend."></canvas>
+					</div>
 					<div class="overlay overlay-top" id="anaInfo"></div>
 					<div class="overlay overlay-bottom">
-						<p title="Origin (0,0): pen position and top of the line box. The red cross marks both axes. 'Above top' fails when yoffset &lt; 0."><span class="mut">x = y =</span> <code>0,0</code> anchor<span class="dot" style="background:var(--r)"></span></p>
-						<p title="Baseline. Alphanumeric glyphs should end here: yoffset + height = base."><span class="mut">yoffset + height =</span> <code id="vb"></code> base<span class="dot" style="background:var(--g)"></span></p>
-						<p title="Line box height. The number is the slack between the lowest glyph bottom and lineHeight; 'Line height fits' checks it stays that way."><span class="mut">max(yoffset + height) +</span> <code id="vgap"></code> <span class="mut">=</span> <code id="vl"></code> lineHeight<span class="dot" style="background:var(--b)"></span></p>
-						<p title="bottom = yoffset + height. Descenders must fall below base. 'Past lineHeight' fails when bottom &gt; lineHeight."><span class="mut">yoffset + height =</span> <code id="vbot"></code> <span id="vbd" style="font-weight:700"></span> bottom<span
-								class="dot" style="background:var(--o)"></span></p>
-						<p title="xadvance = horizontal pen advance. 'Advance too small' fails when xadvance &lt; xoffset + width."><span class="mut">xoffset + width &le;</span> <code id="xa"></code> xadvance<span class="dot" style="background:var(--p)"></span></p>
+						<p
+							title="Origin (0,0): pen position and top of the line box. The red cross marks both axes. 'Above top' fails when yoffset &lt; 0.">
+							<span class="mut">x = y =</span> <code>0,0</code> anchor<span class="dot"
+								style="background:var(--r)"></span></p>
+						<p title="Baseline. Alphanumeric glyphs should end here: yoffset + height = base."><span
+								class="mut">yoffset + height =</span> <code id="vb"></code> base<span class="dot"
+								style="background:var(--g)"></span></p>
+						<p
+							title="Line box height. The number is the slack between the lowest glyph bottom and lineHeight; 'Line height fits' checks it stays that way.">
+							<span class="mut">max(yoffset + height) +</span> <code id="vgap"></code> <span
+								class="mut">=</span> <code id="vl"></code> lineHeight<span class="dot"
+								style="background:var(--b)"></span></p>
+						<p
+							title="bottom = yoffset + height. Descenders must fall below base. 'Past lineHeight' fails when bottom &gt; lineHeight.">
+							<span class="mut">yoffset + height =</span> <code id="vbot"></code> <span id="vbd"
+								style="font-weight:700"></span> bottom<span class="dot"
+								style="background:var(--o)"></span></p>
+						<p
+							title="xadvance = horizontal pen advance. 'Advance too small' fails when xadvance &lt; xoffset + width.">
+							<span class="mut">xoffset + width &le;</span> <code id="xa"></code> xadvance<span
+								class="dot" style="background:var(--p)"></span></p>
 					</div>
 				</div>
 			</article>
@@ -75,8 +91,10 @@
 					<label
 						title="Extra glyphs allowed to hang below the baseline (e.g. Q, J); not snapped to x-height">may
 						hang <input id="hangset" value="QJ" size="6"></label>
-					<label title="One-shot command for Auto-fix; baked into the metrics and cleared after use">top gap <input type="number" id="top" value="0"></label>
-					<label title="One-shot command for Auto-fix; baked into the metrics and cleared after use">bottom gap <input type="number" id="gap" value="0"></label>
+					<label title="One-shot command for Auto-fix; baked into the metrics and cleared after use">top gap
+						<input type="number" id="top" value="0"></label>
+					<label title="One-shot command for Auto-fix; baked into the metrics and cleared after use">bottom
+						gap <input type="number" id="gap" value="0"></label>
 				</div>
 				<p class="mut" id="fixlog"></p>
 				<div id="chk"></div>
@@ -135,13 +153,13 @@
 				</div>
 				<div class="btns" style="margin-top:0">
 					<button id="demo1">Super12</button>
-					<button id="demo1.1">SuperRegen12</button>
-					<button id="demo2">Venice16</button>
-					<button id="demo2.1">VeniceRegen16</button>
-					<button id="demo3">Alagard16</button>
-					<button id="demo4">Cairo16</button>
-					<button id="demo5">Ref16</button>
-					<button id="demo6">lsans-15</button>
+					<button id="demo2">SuperRegen12</button>
+					<button id="demo3">Venice16</button>
+					<button id="demo4">VeniceRegen16</button>
+					<button id="demo5">Alagard16</button>
+					<button id="demo6">Cairo16</button>
+					<button id="demo7">Ref16</button>
+					<button id="demo8">lsans-15</button>
 				</div>
 			</article>
 		</aside>
