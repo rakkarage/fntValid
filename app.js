@@ -788,24 +788,35 @@ function buildFntText() {
 
 	pages.forEach(p => { out += p + "\n"; });
 
-	out += `chars count=${Object.keys(glyphs).length}\n`;
-	Object.keys(glyphs)
-		.map(Number)
-		.sort((a, b) => a - b)
-		.forEach(n => {
-			const g = glyphs[n];
-			const letter = n === 32 ? "space" : charFromCode(n);
-			out +=
-				`char id=${String(n).padEnd(3)} ` +
-				`x=${String(g.x).padStart(3)} ` +
-				`y=${String(g.y).padStart(3)} ` +
-				`width=${String(g.w).padStart(2)} ` +
-				`height=${String(g.h).padStart(2)} ` +
-				`xoffset=${String(g.xo).padStart(2)} ` +
-				`yoffset=${String(g.yo).padStart(2)} ` +
-				`xadvance=${String(g.xa).padStart(2)} ` +
-				`page=0 chnl=0 letter="${letter}"\n`;
-		});
+	const codes = Object.keys(glyphs).map(Number).sort((a, b) => a - b);
+	// Align each field to the widest value actually present, like the source
+	// .fnt: numbers are left-aligned (trailing padding) and fields are joined
+	// by a single space. No arbitrary fixed widths, no right-aligned columns.
+	const metrics = [
+		["x", "x"], ["y", "y"], ["width", "w"], ["height", "h"],
+		["xoffset", "xo"], ["yoffset", "yo"], ["xadvance", "xa"],
+	];
+	/** @type {Record<string, number>} */
+	const widths = {};
+	const grow = (key, value) => {
+		widths[key] = Math.max(widths[key] || 0, String(value).length);
+	};
+	for (const n of codes) {
+		grow("id", n);
+		for (const [key, prop] of metrics) grow(key, glyphs[n][prop]);
+	}
+	const cell = (key, value) =>
+		`${key}=${String(value).padEnd(widths[key] || 0)}`;
+
+	out += `chars count=${codes.length}\n`;
+	codes.forEach(n => {
+		const g = glyphs[n];
+		const letter = n === 32 ? "space" : charFromCode(n);
+		out +=
+			`char ${cell("id", n)} ` +
+			metrics.map(([key, prop]) => cell(key, g[prop])).join(" ") +
+			` page=0 chnl=0 letter="${letter}"\n`;
+	});
 
 	if (kerningLines.length) {
 		out += `kernings count=${kerningLines.length}\n`;
