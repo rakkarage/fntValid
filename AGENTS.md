@@ -1,6 +1,6 @@
 # fntValid — agent notes
 
-Static BMFont metric validator: plain HTML/CSS/classic JS, no framework, no `package.json`, no build or test runner. `index.html` is the only entrypoint; `app.js` is the app logic (~1144 lines), `guide.js` is an opt-in explainer overlay, `Font/` holds sample `.fnt` + `.png` pairs.
+Static BMFont metric validator: plain HTML/CSS/classic JS, no framework, no `package.json`, no build or test runner. `index.html` is the only entrypoint; `app.js` is the app logic (~1162 lines), `guide.js` is an opt-in explainer overlay, `Font/` holds sample `.fnt` + `.png` pairs.
 
 ## Run / verify
 
@@ -15,13 +15,13 @@ Static BMFont metric validator: plain HTML/CSS/classic JS, no framework, no `pac
 
 ## Domain invariants — don't "simplify" these
 
-- Top/bottom gaps are **inferred from the loaded file**, not zero: on parse, `appliedTopGap = min(yoffset)` and `appliedBotGap = lineHeight − max(yoffset + height)`. The two global checks ("Top edge aligned", "Line height fits") compare against those targets. `#top`/`#gap` inputs are one-shot Auto-fix commands, baked into metrics and cleared afterward; editing them only reruns checks.
+- Top/bottom gaps are **inferred from the loaded file**, not zero: on parse, `appliedTopGap = min(yoffset)` and `appliedBotGap = lineHeight − max(yoffset + height)`. The two global checks ("Top edge aligned", "Line height fits") compare against those targets. `#top`/`#gap` inputs are one-shot Auto-fix commands, baked into metrics and cleared afterward; editing them only reruns checks. Auto-fix clamps a negative bottom gap to 0 (so `lineHeight` ends at the lowest ink — Gofnt's TTF `ascent+descent` can declare a line box shorter than swash glyphs), appends far-off glyphs that hang *below* the baseline to `#hangset` instead of moving their ink, and re-derives `applied*Gap` from the final metrics so browser state always matches a reload/export.
 - Descender classification is user-editable and shared: `#dset` (default `gjpqy`) and `#hangset` (default `QJ`) drive the Checks, Auto-fix, and the `desc`/`nodesc` group filter in Settings. The filters read the live input values.
 - Pixel-based checks ("Rect has blank edges", Trim, part of Auto-fix) require a readable atlas canvas. Paste-only `.fnt` or `file://` image loads can taint/fail it (`inkReadFailed`), disabling those checks. Use "Open .fnt + .png…", drag/drop both files, or a local server.
 - Export is a round-trip: unknown `info`/`common` attributes, `page` lines and `kerning` lines are preserved verbatim, while `char` lines are regenerated (sorted by code, normalized fields, always `page=0 chnl=0` and a `letter=` attribute). Char-line formatting changes on export by design.
 - Guide colors come from CSS variables in `styles.css` (`--r` top, `--g` base, `--b` lineHeight, `--o` bottom, `--p` advance, `--y` warn). The canvas reads them via `cssVar()` and `guide.js` SVGs use `var(--…)`, so a single CSS change themes both. Theme choice is persisted in `localStorage.theme` and applied by an inline script in `<head>` before CSS loads.
 - Keyboard model: arrows nudge the selected glyph's `xo`/`yo` (±1, Shift ×10); Ctrl/Cmd+arrows navigate glyphs; ignored while focus is in a form field. The Guide dialog stops `keydown` propagation so arrows don't nudge glyphs behind it.
 
-## Known data gotcha
+## Demo paths
 
-- Demo 9's button is labeled "VeniceRegen20" but fetches `Font/VeniceRegen19.fnt`, which does **not** exist — the real file is `Font/VeniceRegen20.fnt`. Demos 3/4 are labeled "SuperRegen13/14" but load `Font/ST02R.fnt` / `Font/ST03R.fnt`. Verify paths against `Font/` before changing labels or paths.
+- All seven demo buttons (`demo1`–`demo7` in `index.html`) now map one-to-one to their `loadDemo("Font/…")` calls in `app.js`, and every target exists in `Font/`. An older mismatch (a "VeniceRegen20" button fetching a nonexistent `VeniceRegen19.fnt`, plus mislabeled SuperRegen demos) was fixed. Still verify labels and paths against `Font/` when adding or renaming demos.

@@ -599,10 +599,19 @@ function autoFix() {
 	// An empty command field means "no new gap" — reuse the applied target so
 	// re-running Auto-fix is idempotent instead of undoing the last gap.
 	const topGap = $input("top").value === "" ? appliedTopGap : Number($input("top").value);
-	const bottomGap = $input("gap").value === "" ? appliedBotGap : Number($input("gap").value);
-	const codes = Object.keys(glyphs).map(Number);
+	const rawBottomGap = $input("gap").value === "" ? appliedBotGap : Number($input("gap").value);
 	/** @type {string[]} */
 	const log = [];
+	// Gofnt writes lineHeight from the TTF's ascent+descent, which can be shorter
+	// than the real ink when glyphs have swashes (Venice's Y/f/J hang below the
+	// declared descent). A negative bottom gap therefore isn't a target: baking
+	// it back in would leave "Past lineHeight" failing forever. Use the
+	// generator's own "tight line" rule instead — lineHeight = lowest ink.
+	const bottomGap = Math.max(0, rawBottomGap);
+	if (bottomGap !== rawBottomGap) {
+		log.push(`Bottom gap ${rawBottomGap} was negative; lineHeight will end at the lowest glyph.`);
+	}
+	const codes = Object.keys(glyphs).map(Number);
 
 	const AGREE = 0.6;      // share of flat glyphs that must agree to call it a uniform shift
 	const SNAP_TOL = 1;     // per-glyph snap only for errors this small
@@ -641,18 +650,31 @@ function autoFix() {
 		}
 	}
 
-	// 1. Snap near-misses to the common baseline; leave big deviations (f J Q Y) for review.
+	// 1. Snap near-misses to the common baseline. Glyphs whose ink hangs well
+	// below it (TTF swashes like Venice's Y/f) are classified as hangers rather
+	// than moved — moving them would shift real ink. Glyphs far ABOVE the common
+	// bottom are still left for review, since those look like bad metrics.
 	const commonBottom = mostCommonValue(flat.map(bottomOf));
 	if (commonBottom == null) return; // unreachable: flat is non-empty
 	let snapped = 0, skipped = 0;
+	/** @type {string[]} */
+	const newHangers = [];
+	const hangInput = $input("hangset");
 	flat.forEach(c => {
 		const off = commonBottom - bottomOf(c);
 		if (off === 0) return;
 		if (Math.abs(off) <= SNAP_TOL) { glyphs[c].yo += off; snapped++; }
-		else skipped++;
+		else if (bottomOf(c) > commonBottom + SNAP_TOL) {
+			const ch = charFromCode(c);
+			if (!hangInput.value.includes(ch)) newHangers.push(ch);
+		} else skipped++;
 	});
 	if (snapped) log.push(`Snapped ${snapped} glyph(s) to the baseline.`);
-	if (skipped) log.push(`${skipped} flat glyph(s) are far off the baseline and were left for review.`);
+	if (newHangers.length) {
+		hangInput.value += newHangers.join("");
+		log.push(`Added ${newHangers.join(", ")} to may-hang (ink hangs below the baseline).`);
+	}
+	if (skipped) log.push(`${skipped} flat glyph(s) are far above the baseline and were left for review.`);
 
 	// 2. Descender tops: x-height descenders match x-height; j matches i.
 	const letterTop = mostCommonValue(
@@ -676,15 +698,18 @@ function autoFix() {
 	}
 	baseline = commonBottom + shift;
 
-	// 4. Fit lineHeight.
+	// 4. Fit lineHeight (bottomGap >= 0, so the lowest ink always fits).
 	const oldLH = lineHeight;
-	lineHeight = Math.max(...codes.map(bottomOf)) + bottomGap;
+	const maxBottom = Math.max(...codes.map(bottomOf));
+	lineHeight = maxBottom + bottomGap;
 	if (lineHeight !== oldLH) log.push(`lineHeight ${oldLH} \u2192 ${lineHeight}.`);
 
 	// The gap inputs are one-shot commands: their values are now baked into
-	// yoffset/lineHeight, so clear them and keep the applied values for checks.
-	appliedTopGap = topGap;
-	appliedBotGap = bottomGap;
+	// yoffset/lineHeight, so clear them. Re-derive the applied gaps from the
+	// resulting metrics — exactly what a reload would infer from the .fnt —
+	// so no invisible state can drift from what gets exported.
+	appliedTopGap = Math.min(...codes.map(c => glyphs[c].yo));
+	appliedBotGap = lineHeight - maxBottom;
 	$input("top").value = "";
 	$input("gap").value = "";
 
