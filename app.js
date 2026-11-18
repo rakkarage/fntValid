@@ -26,9 +26,11 @@ let baseline = 0;
 let lineHeight = 0;
 
 /**
- * Top/bottom gaps already baked into the metrics by Auto-fix. The #top/#gap
- * fields are one-shot commands; once Auto-fix consumes them, the resulting
- * target lives here (and in the metrics) instead of in the visible inputs.
+ * Top/bottom gaps baked into the metrics. On load they are inferred from the
+ * file (min yoffset, lineHeight − lowest bottom) so the global checks compare
+ * against the font's own spacing instead of an arbitrary zero. Auto-fix may
+ * overwrite them with one-shot values from #top/#gap, which are cleared once
+ * baked into yoffset/lineHeight.
  */
 let appliedTopGap = 0;
 let appliedBotGap = 0;
@@ -115,6 +117,7 @@ function showEmptyState() {
 	$("anaInfo").innerHTML = "";
 	$("vb").textContent = "";
 	$("vl").textContent = "";
+	$("vgap").textContent = "";
 	$("vbot").textContent = "";
 	$("xa").textContent = "";
 	$("vbd").textContent = "";
@@ -153,18 +156,20 @@ function makeCanvasContext(canvasEl, width, height) {
  * which caused visible flicker. The frame covers the union of all glyph
  * offset boxes plus the fixed top/base/lineHeight guides.
  */
-/** @returns {{ left:number, right:number, top:number, bottom:number }} */
+/** @returns {{ left:number, right:number, top:number, bottom:number, maxBottom:number }} */
 function anatomyFrame() {
 	const codes = Object.keys(glyphs).map(Number);
 	let left = 0, right = 1, top = 0, bottom = Math.max(lineHeight, baseline);
+	let maxBottom = 0;
 	for (const code of codes) {
 		const g = glyphs[code];
 		left = Math.min(left, g.xo);
 		right = Math.max(right, g.xa, g.xo + g.w);
 		top = Math.min(top, g.yo);
-		bottom = Math.max(bottom, g.yo + g.h);
+		maxBottom = Math.max(maxBottom, g.yo + g.h);
+		bottom = Math.max(bottom, maxBottom);
 	}
-	return { left, right, top, bottom };
+	return { left, right, top, bottom, maxBottom };
 }
 
 function drawGlyphAnatomy() {
@@ -262,6 +267,8 @@ function drawGlyphAnatomy() {
 	const descenderDepth = glyphBottom - baseline;
 	$("vb").textContent = String(baseline);
 	$("vl").textContent = String(lineHeight);
+	const bottomSlack = lineHeight - frame.maxBottom;
+	$("vgap").textContent = bottomSlack < 0 ? `(${bottomSlack})` : String(bottomSlack);
 	$("vbot").textContent = String(glyphBottom);
 	$("xa").textContent = String(glyph.xa);
 	$("vbd").textContent = descenderDepth
@@ -835,8 +842,16 @@ function parseFnt(text, basePath, skipImageLoad) {
 	glyphs = parsedGlyphs;
 	lineHeight = parsedLineHeight;
 	baseline = parsedBaseline;
-	appliedTopGap = 0;
-	appliedBotGap = 0;
+	// The .fnt has no gap fields — the gaps are implicit in the metrics. Adopt
+	// the loaded font's own spacing as the target so "Top edge aligned" and
+	// "Line height fits" don't report false failures on load. Nudging a glyph
+	// after load still breaks the corresponding check.
+	{
+		const codes = Object.keys(parsedGlyphs).map(Number);
+		appliedTopGap = Math.min(...codes.map(c => parsedGlyphs[c].yo));
+		appliedBotGap = parsedLineHeight -
+			Math.max(...codes.map(c => parsedGlyphs[c].yo + parsedGlyphs[c].h));
+	}
 	header = h;
 	extraInfoAttrs = info;
 	extraCommonAttrs = common;
