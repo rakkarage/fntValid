@@ -25,6 +25,14 @@ let header = { face: "", size: 0, scaleW: 0, scaleH: 0, pageFile: "" };
 let baseline = 0;
 let lineHeight = 0;
 
+/**
+ * Top/bottom gaps already baked into the metrics by Auto-fix. The #top/#gap
+ * fields are one-shot commands; once Auto-fix consumes them, the resulting
+ * target lives here (and in the metrics) instead of in the visible inputs.
+ */
+let appliedTopGap = 0;
+let appliedBotGap = 0;
+
 /** Currently selected char code (65 = 'A' by default). */
 let selectedCode = 65;
 
@@ -499,8 +507,8 @@ function runChecks() {
 	// two global checks
 	const allGlyphs = Object.values(glyphs);
 	if (allGlyphs.length) {
-		const desiredTopGap = Number($input("top").value);
-		const desiredBotGap = Number($input("gap").value);
+		const desiredTopGap = appliedTopGap;
+		const desiredBotGap = appliedBotGap;
 
 		const highestY = Math.min(...allGlyphs.map(g => g.yo));
 		const lowestBottom = Math.max(...allGlyphs.map(g => g.yo + g.h));
@@ -548,8 +556,10 @@ function autoFix() {
 
 	const descenderChars = $input("dset").value;
 	const hangingChars = $input("hangset").value;
-	const topGap = Number($input("top").value);
-	const bottomGap = Number($input("gap").value);
+	// An empty command field means "no new gap" — reuse the applied target so
+	// re-running Auto-fix is idempotent instead of undoing the last gap.
+	const topGap = $input("top").value === "" ? appliedTopGap : Number($input("top").value);
+	const bottomGap = $input("gap").value === "" ? appliedBotGap : Number($input("gap").value);
 	const codes = Object.keys(glyphs).map(Number);
 	/** @type {string[]} */
 	const log = [];
@@ -630,6 +640,13 @@ function autoFix() {
 	const oldLH = lineHeight;
 	lineHeight = Math.max(...codes.map(bottomOf)) + bottomGap;
 	if (lineHeight !== oldLH) log.push(`lineHeight ${oldLH} \u2192 ${lineHeight}.`);
+
+	// The gap inputs are one-shot commands: their values are now baked into
+	// yoffset/lineHeight, so clear them and keep the applied values for checks.
+	appliedTopGap = topGap;
+	appliedBotGap = bottomGap;
+	$input("top").value = "";
+	$input("gap").value = "";
 
 	$("fixlog").textContent = log.join(" ") || "Nothing to fix.";
 	redrawAll();
@@ -785,6 +802,8 @@ function parseFnt(text, basePath, skipImageLoad) {
 	glyphs = parsedGlyphs;
 	lineHeight = parsedLineHeight;
 	baseline = parsedBaseline;
+	appliedTopGap = 0;
+	appliedBotGap = 0;
 	header = h;
 	extraInfoAttrs = info;
 	extraCommonAttrs = common;
@@ -1054,7 +1073,9 @@ async function loadDemo(path, displayName) {
 }
 
 $("demo1").onclick = () => loadDemo("Font/Super12.fnt", "Super12");
+$("demo1.1").onclick = () => loadDemo("Font/SuperRegen12.fnt", "SuperRegen12");
 $("demo2").onclick = () => loadDemo("Font/Venice16.fnt", "Venice16");
+$("demo2.1").onclick = () => loadDemo("Font/VeniceRegen16.fnt", "VeniceRegen16");
 $("demo3").onclick = () => loadDemo("Font/Alagard16.fnt", "Alagard16");
 $("demo4").onclick = () => loadDemo("Font/Cairo16.fnt", "Cairo16");
 $("demo5").onclick = () => loadDemo("Font/Ref16.fnt", "Ref16");
