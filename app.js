@@ -682,7 +682,6 @@ function autoFix() {
 	let snapped = 0, skipped = 0;
 	/** @type {string[]} */
 	const newHangers = [];
-	const hangInput = $input("hangset");
 	flat.forEach(c => {
 		const off = commonBottom - bottomOf(c);
 		if (off === 0) return;
@@ -694,8 +693,7 @@ function autoFix() {
 	});
 	if (snapped) log.push(`Snapped ${snapped} glyph(s) to the baseline.`);
 	if (newHangers.length) {
-		hangInput.value += newHangers.join("");
-		log.push(`Added ${newHangers.join(", ")} to may-hang (ink hangs below the baseline).`);
+		log.push(`Detected ${newHangers.join(", ")} hanging below the baseline. Add to may-hang if intentional — left unchanged.`);
 	}
 	if (skipped) log.push(`${skipped} flat glyph(s) are far above the baseline and were left for review.`);
 
@@ -906,6 +904,8 @@ function parseFnt(text, basePath, skipImageLoad) {
 		appliedBotGap = parsedLineHeight -
 			Math.max(...codes.map(c => parsedGlyphs[c].yo + parsedGlyphs[c].h));
 	}
+	$input("top").value = "";
+	$input("gap").value = "";
 	header = h;
 	extraInfoAttrs = info;
 	extraCommonAttrs = common;
