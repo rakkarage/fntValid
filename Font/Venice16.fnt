@@ -1,4 +1,4 @@
-info face="Venice16" size=16
+info face="VeniceClassic" size=16
 common lineHeight=16 base=13 scaleW=171 scaleH=79 pages=1
 page id=0 file="Venice16.png"
 chars count=95

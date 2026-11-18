@@ -1,4 +1,4 @@
-info face="Super12" size=12
+info face="ST02R" size=12
 common lineHeight=12 base=10 scaleW=128 scaleH=128 pages=1
 page id=0 file="Super12.png"
 chars count=95
