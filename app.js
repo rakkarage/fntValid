@@ -286,12 +286,14 @@ function drawGlyphAnatomy() {
 	$("vl").textContent = String(lineHeight);
 	const bottomSlack = lineHeight - frame.maxBottom;
 	$("vgap").textContent = bottomSlack < 0 ? `(${bottomSlack})` : String(bottomSlack);
+	$("vgap").className = bottomSlack < 0 ? "warn" : "";
+	// Both delta rows follow the same shape: X + delta = result, with the
+	// delta inline as an operand and warning-colored when non-zero.
+	$("vbbase").textContent = String(baseline);
 	$("vbot").textContent = String(glyphBottom);
 	$("xa").textContent = String(glyph.xa);
-	$("vbd").textContent = descenderDepth
-		? (descenderDepth > 0 ? `+${descenderDepth}px ` : `${descenderDepth}px `)
-		: "";
-	$("vbd").className = descenderDepth ? "warn" : "good";
+	$("vbd").textContent = descenderDepth < 0 ? `(${descenderDepth})` : String(descenderDepth);
+	$("vbd").className = descenderDepth ? "warn" : "";
 	$("anaInfo").innerHTML =
 		`<b style="font-size:1.6em">\u201C${charFromCode(selectedCode)}\u201D</b> ` +
 		`<span class="mut">id ${selectedCode}</span>`;
