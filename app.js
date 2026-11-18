@@ -135,26 +135,49 @@ function showOverlays() {
 
 /** @param {HTMLCanvasElement} canvasEl @param {number} width @param {number} height */
 function makeCanvasContext(canvasEl, width, height) {
-	canvasEl.width = width;
-	canvasEl.height = height;
+	// Reassigning width/height clears and reallocates the backing store. When
+	// the frame is unchanged, reuse it — every caller repaints the full canvas.
+	if (canvasEl.width !== width || canvasEl.height !== height) {
+		canvasEl.width = width;
+		canvasEl.height = height;
+	}
 	const ctx = canvasEl.getContext("2d");
 	ctx.imageSmoothingEnabled = false;
 	return ctx;
+}
+
+/**
+ * The anatomy preview's frame, computed from every glyph so it is identical
+ * for every selection. Using only the selected glyph made the canvas aspect
+ * ratio (and thus its displayed height) change as you switched characters,
+ * which caused visible flicker. The frame covers the union of all glyph
+ * offset boxes plus the fixed top/base/lineHeight guides.
+ */
+/** @returns {{ left:number, right:number, top:number, bottom:number }} */
+function anatomyFrame() {
+	const codes = Object.keys(glyphs).map(Number);
+	let left = 0, right = 1, top = 0, bottom = Math.max(lineHeight, baseline);
+	for (const code of codes) {
+		const g = glyphs[code];
+		left = Math.min(left, g.xo);
+		right = Math.max(right, g.xa, g.xo + g.w);
+		top = Math.min(top, g.yo);
+		bottom = Math.max(bottom, g.yo + g.h);
+	}
+	return { left, right, top, bottom };
 }
 
 function drawGlyphAnatomy() {
 	const glyph = glyphs[selectedCode];
 	const ZOOM = 28;
 	const PAD_X = 2, PAD_Y = 1; // symmetric, in glyph-space units
-	const MIN_W = 8;            // keeps tiny glyphs from making a sliver canvas
+	const MIN_W = 8;            // keeps tiny fonts from making a sliver canvas
 
-	// Content bounds: the glyph at its current offsets, the fixed guides
-	// (top/base/lineHeight) and the advance box, so the preview grows in
-	// whichever direction the glyph is nudged.
-	const contentLeft = Math.min(0, glyph.xo);
-	const contentRight = Math.max(1, glyph.xa, glyph.xo + glyph.w);
-	const contentTop = Math.min(0, glyph.yo, baseline);
-	const contentBottom = Math.max(0, lineHeight, glyph.yo + glyph.h, baseline);
+	const frame = anatomyFrame();
+	const contentLeft = frame.left;
+	const contentRight = frame.right;
+	const contentTop = frame.top;
+	const contentBottom = frame.bottom;
 
 	// Pad narrow content out to MIN_W and keep it centered.
 	const contentW = contentRight - contentLeft;
@@ -175,6 +198,16 @@ function drawGlyphAnatomy() {
 	// faint advance x lineHeight box
 	ctx.fillStyle = "rgba(120,120,200,.12)";
 	ctx.fillRect(originX, originY, glyph.xa * ZOOM, lineHeight * ZOOM);
+
+	// The red y=0 guide doubles as a two-axis anchor at the glyph origin:
+	// this is its vertical half. Drawn behind the glyph so the bitmap stays
+	// readable; the horizontal half is drawn with the other guides below.
+	ctx.strokeStyle = cssVar("--r");
+	ctx.lineWidth = 2;
+	ctx.beginPath();
+	ctx.moveTo(originX, 0);
+	ctx.lineTo(originX, H);
+	ctx.stroke();
 
 	// scaled-up glyph
 	ctx.drawImage(

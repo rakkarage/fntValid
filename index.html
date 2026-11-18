@@ -35,15 +35,16 @@
 					<span class="hint">Arrows nudge glyph · Shift x10 · Mod+←/→ select</span>
 				</div>
 				<div class="preview-box">
-					<div class="sc"><canvas id="anat"></canvas></div>
+					<div class="sc"><canvas id="anat"
+							title="Dashed box = glyph rect at (xoffset, yoffset), size width × height. Faint fill = one advance × lineHeight cell. Colored guides are labeled in the legend."></canvas></div>
 					<div class="overlay overlay-top" id="anaInfo"></div>
 					<div class="overlay overlay-bottom">
-						<p><code>0</code> top<span class="dot" style="background:var(--r)"></span></p>
-						<p><code id="vb"></code> base<span class="dot" style="background:var(--g)"></span></p>
-						<p><code id="vl"></code> lineHeight<span class="dot" style="background:var(--b)"></span></p>
-						<p><span id="vbd" style="font-weight:700"></span> <code id="vbot"></code> bottom<span
+						<p title="Origin (0,0): pen position and top of the line box. The red cross marks both axes. 'Above top' fails when yoffset &lt; 0."><span class="mut">x = y = 0</span> <code>0,0</code> anchor<span class="dot" style="background:var(--r)"></span></p>
+						<p title="Baseline. Alphanumeric glyphs should end here: yoffset + height = base."><span class="mut">yo + h = base</span> <code id="vb"></code> base<span class="dot" style="background:var(--g)"></span></p>
+						<p title="Line box height. 'Line height fits' expects lineHeight = lowest bottom + bottom gap."><span class="mut">max bottom + gap</span> <code id="vl"></code> lineHeight<span class="dot" style="background:var(--b)"></span></p>
+						<p title="bottom = yoffset + height. Descenders must fall below base. 'Past lineHeight' fails when bottom &gt; lineHeight."><span class="mut">yo + h</span> <span id="vbd" style="font-weight:700"></span> <code id="vbot"></code> bottom<span
 								class="dot" style="background:var(--o)"></span></p>
-						<p><code id="xa"></code> xadvance<span class="dot" style="background:var(--p)"></span></p>
+						<p title="xadvance = horizontal pen advance. 'Advance too small' fails when xadvance &lt; xoffset + width."><span class="mut">xa &ge; xo + w</span> <code id="xa"></code> xadvance<span class="dot" style="background:var(--p)"></span></p>
 					</div>
 				</div>
 			</article>
