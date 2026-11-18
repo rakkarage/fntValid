@@ -1123,7 +1123,7 @@ async function loadDemo(path, displayName) {
 $("demo1").onclick = () => loadDemo("Font/Super12.fnt", "Super12");
 $("demo2").onclick = () => loadDemo("Font/Super12Regen.fnt", "Super12Regen");
 $("demo3").onclick = () => loadDemo("Font/Venice16.fnt", "Venice16");
-$("demo4").onclick = () => loadDemo("Font/Venice16Regen16.fnt", "Venice16Regen");
+$("demo4").onclick = () => loadDemo("Font/Venice16Regen.fnt", "Venice16Regen");
 $("demo5").onclick = () => loadDemo("Font/Alagard16.fnt", "Alagard16");
 $("demo6").onclick = () => loadDemo("Font/Cairo16.fnt", "Cairo16");
 $("demo7").onclick = () => loadDemo("Font/lsans-15.fnt", "lsans-15");
