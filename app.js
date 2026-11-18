@@ -79,12 +79,25 @@ const $canvas = id => /** @type {HTMLCanvasElement} */($(id));
 /** @type {(id:string) => HTMLTextAreaElement} */
 const $textarea = id => /** @type {HTMLTextAreaElement} */($(id));
 
+/** Like $, but for a CSS selector; the matched element is expected to exist.
+ * @param {string} sel
+ * @returns {HTMLElement}
+ */
+const $sel = sel => {
+	const el = document.querySelector(sel);
+	if (!el) throw new Error(`Missing element ${sel}`);
+	return /** @type {HTMLElement} */ (el);
+};
+
 /** Clear a stale Auto-fix log so it doesn't describe a previously loaded font. */
 const clearFixLog = () => { $("fixlog").textContent = ""; };
 
+/** @param {string} name */
 const cssVar = name =>
 	getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+/** @param {number} code */
 const charFromCode = code => String.fromCharCode(code);
+/** @param {number} code */
 const glyphLabel = code => code === 32 ? "\u2423" : charFromCode(code);
 const hasGlyphs = () => Object.keys(glyphs).length > 0;
 
@@ -122,21 +135,25 @@ function showEmptyState() {
 	$("xa").textContent = "";
 	$("vbd").textContent = "";
 
-	document.querySelector(".overlay-top").style.display = "none";
-	document.querySelector(".overlay-bottom").style.display = "none";
+	$sel(".overlay-top").style.display = "none";
+	$sel(".overlay-bottom").style.display = "none";
 
 	const atlasCanvas = $canvas("atlas");
 	const anatCanvas = $canvas("anat");
-	atlasCanvas.getContext("2d").clearRect(0, 0, atlasCanvas.width, atlasCanvas.height);
-	anatCanvas.getContext("2d").clearRect(0, 0, anatCanvas.width, anatCanvas.height);
+	const atlasCtx = /** @type {CanvasRenderingContext2D} */ (atlasCanvas.getContext("2d"));
+	const anatCtx = /** @type {CanvasRenderingContext2D} */ (anatCanvas.getContext("2d"));
+	atlasCtx.clearRect(0, 0, atlasCanvas.width, atlasCanvas.height);
+	anatCtx.clearRect(0, 0, anatCanvas.width, anatCanvas.height);
 }
 
 function showOverlays() {
-	document.querySelector(".overlay-top").style.display = "";
-	document.querySelector(".overlay-bottom").style.display = "";
+	$sel(".overlay-top").style.display = "";
+	$sel(".overlay-bottom").style.display = "";
 }
 
-/** @param {HTMLCanvasElement} canvasEl @param {number} width @param {number} height */
+/** @param {HTMLCanvasElement} canvasEl @param {number} width @param {number} height
+ * @returns {CanvasRenderingContext2D}
+ */
 function makeCanvasContext(canvasEl, width, height) {
 	// Reassigning width/height clears and reallocates the backing store. When
 	// the frame is unchanged, reuse it — every caller repaints the full canvas.
@@ -144,7 +161,7 @@ function makeCanvasContext(canvasEl, width, height) {
 		canvasEl.width = width;
 		canvasEl.height = height;
 	}
-	const ctx = canvasEl.getContext("2d");
+	const ctx = /** @type {CanvasRenderingContext2D} */ (canvasEl.getContext("2d"));
 	ctx.imageSmoothingEnabled = false;
 	return ctx;
 }
@@ -354,7 +371,7 @@ function inkBox(code) {
 	const c = document.createElement("canvas");
 	c.width = g.w;
 	c.height = g.h;
-	const cx = c.getContext("2d", { willReadFrequently: true });
+	const cx = /** @type {CanvasRenderingContext2D} */ (c.getContext("2d", { willReadFrequently: true }));
 	let d;
 	try {
 		cx.drawImage(atlasImage, g.x, g.y, g.w, g.h, 0, 0, g.w, g.h);
@@ -420,9 +437,13 @@ function runChecks() {
 	inkReadFailed = false;
 	const descenderChars = $input("dset").value;
 	const hangingChars = $input("hangset").value;
+	/** @param {string} ch */
 	const isDescender = ch => descenderChars.includes(ch);
+	/** @param {string} ch */
 	const mayHang = ch => isDescender(ch) || hangingChars.includes(ch);
+	/** @param {string} ch */
 	const isAlnum = ch => /[A-Za-z0-9]/.test(ch);
+	/** @param {Glyph} g */
 	const glyphBottom = g => g.yo + g.h;
 
 	/** @type {Rule[]} */
@@ -618,7 +639,9 @@ function autoFix() {
 	const XHEIGHT = "acemnorsuvwxz";
 	const XDESC = "gpqy";   // descenders whose top is the x-height
 
+	/** @param {number} c */
 	const bottomOf = c => glyphs[c].yo + glyphs[c].h;
+	/** @param {number} c */
 	const isFlat = c => {
 		const ch = charFromCode(c);
 		return /[A-Za-z0-9]/.test(ch)
@@ -815,9 +838,9 @@ function parseFnt(text, basePath, skipImageLoad) {
 	const parseAllAttrs = line => {
 		/** @type {Record<string,string>} */
 		const o = {};
-		line.replace(/(\w+)=("([^"]*)"|[^\s]+)/g, (_, k, _v, quoted) => {
-			o[k] = quoted != null ? quoted : _v;
-		});
+		for (const m of line.matchAll(/(\w+)=("([^"]*)"|[^\s]+)/g)) {
+			o[m[1]] = m[3] != null ? m[3] : m[2];
+		}
 		return o;
 	};
 
@@ -833,13 +856,13 @@ function parseFnt(text, basePath, skipImageLoad) {
 		if (/^char /.test(line)) {
 			const id = Number(getAttr(line, "id"));
 			parsedGlyphs[id] = {
-				x: +getAttr(line, "x"),
-				y: +getAttr(line, "y"),
-				w: +getAttr(line, "width"),
-				h: +getAttr(line, "height"),
-				xo: +getAttr(line, "xoffset"),
-				yo: +getAttr(line, "yoffset"),
-				xa: +getAttr(line, "xadvance"),
+				x: Number(getAttr(line, "x")),
+				y: Number(getAttr(line, "y")),
+				w: Number(getAttr(line, "width")),
+				h: Number(getAttr(line, "height")),
+				xo: Number(getAttr(line, "xoffset")),
+				yo: Number(getAttr(line, "yoffset")),
+				xa: Number(getAttr(line, "xadvance")),
 			};
 		} else if (/^common /.test(line)) {
 			const a = parseAllAttrs(line);
@@ -964,7 +987,7 @@ $("theme").onclick = () => {
 
 // Click on the atlas to pick a glyph.
 const atlasCanvas = $canvas("atlas");
-atlasCanvas.onclick = event => {
+atlasCanvas.onclick = /** @param {MouseEvent} event */ event => {
 	if (!hasGlyphs()) return;
 	const rect = atlasCanvas.getBoundingClientRect();
 	const px = (event.clientX - rect.left) / rect.width * header.scaleW;
@@ -1083,7 +1106,7 @@ async function openFiles(list) {
 			header.scaleW = atlasImage.width;
 			header.scaleH = atlasImage.height;
 			redrawAll();
-			$("hint").textContent = `Loaded ${fnt ? fnt.name : ".fnt"} + ${png.name}.`;
+			$("hint").textContent = `Loaded ${fnt ? fnt.name : ".fnt"} + ${pendingPng.name}.`;
 		} else {
 			$("hint").textContent = "Could not parse .fnt.";
 		}
@@ -1095,7 +1118,7 @@ async function openFiles(list) {
 			$("hint").textContent = "Could not parse .fnt.";
 		}
 	} else if (pendingPng) {
-		$("hint").textContent = `Loaded ${png.name}. Now add the matching .fnt.`;
+		$("hint").textContent = `Loaded ${pendingPng.name}. Now add the matching .fnt.`;
 	}
 }
 
