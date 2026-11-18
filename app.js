@@ -1122,12 +1122,18 @@ async function loadDemo(path, displayName) {
 
 $("demo1").onclick = () => loadDemo("Font/Super12.fnt", "Super12");
 $("demo2").onclick = () => loadDemo("Font/SuperRegen12.fnt", "SuperRegen12");
-$("demo3").onclick = () => loadDemo("Font/Venice16.fnt", "Venice16");
-$("demo4").onclick = () => loadDemo("Font/VeniceRegen16.fnt", "VeniceRegen16");
-$("demo5").onclick = () => loadDemo("Font/Alagard16.fnt", "Alagard16");
-$("demo6").onclick = () => loadDemo("Font/Cairo16.fnt", "Cairo16");
-$("demo7").onclick = () => loadDemo("Font/Ref16.fnt", "Ref16");
-$("demo8").onclick = () => loadDemo("Font/lsans-15.fnt", "lsans-15");
+$("demo3").onclick = () => loadDemo("Font/ST02R.fnt", "SuperRegen13");
+$("demo4").onclick = () => loadDemo("Font/ST03R.fnt", "SuperRegen14");
+$("demo5").onclick = () => loadDemo("Font/Venice16.fnt", "Venice16");
+$("demo6").onclick = () => loadDemo("Font/VeniceRegen16.fnt", "VeniceRegen16");
+$("demo7").onclick = () => loadDemo("Font/VeniceRegen17.fnt", "VeniceRegen17");
+$("demo8").onclick = () => loadDemo("Font/VeniceRegen18.fnt", "VeniceRegen18");
+$("demo9").onclick = () => loadDemo("Font/VeniceRegen19.fnt", "VeniceRegen19");
+$("demo10").onclick = () => loadDemo("Font/VeniceRegen21.fnt", "VeniceRegen21");
+$("demo11").onclick = () => loadDemo("Font/Alagard16.fnt", "Alagard16");
+$("demo12").onclick = () => loadDemo("Font/Cairo16.fnt", "Cairo16");
+$("demo13").onclick = () => loadDemo("Font/Ref16.fnt", "Ref16");
+$("demo14").onclick = () => loadDemo("Font/lsans-15.fnt", "lsans-15");
 
 //#endregion
 

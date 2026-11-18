@@ -43,7 +43,8 @@
 						<p
 							title="Origin (0,0): pen position and top of the line box. The red cross marks both axes. 'Above top' fails when yoffset &lt; 0.">
 							<span class="mut">x = y =</span> <code>0,0</code> anchor<span class="dot"
-								style="background:var(--r)"></span></p>
+								style="background:var(--r)"></span>
+						</p>
 						<p title="Baseline. Alphanumeric glyphs should end here: yoffset + height = base."><span
 								class="mut">yoffset + height =</span> <code id="vb"></code> base<span class="dot"
 								style="background:var(--g)"></span></p>
@@ -51,16 +52,19 @@
 							title="Line box height. The number is the slack between the lowest glyph bottom and lineHeight; 'Line height fits' checks it stays that way.">
 							<span class="mut">max(yoffset + height) +</span> <code id="vgap"></code> <span
 								class="mut">=</span> <code id="vl"></code> lineHeight<span class="dot"
-								style="background:var(--b)"></span></p>
+								style="background:var(--b)"></span>
+						</p>
 						<p
 							title="bottom = yoffset + height. Descenders must fall below base. 'Past lineHeight' fails when bottom &gt; lineHeight.">
 							<span class="mut">yoffset + height =</span> <code id="vbot"></code> <span id="vbd"
 								style="font-weight:700"></span> bottom<span class="dot"
-								style="background:var(--o)"></span></p>
+								style="background:var(--o)"></span>
+						</p>
 						<p
 							title="xadvance = horizontal pen advance. 'Advance too small' fails when xadvance &lt; xoffset + width.">
 							<span class="mut">xoffset + width &le;</span> <code id="xa"></code> xadvance<span
-								class="dot" style="background:var(--p)"></span></p>
+								class="dot" style="background:var(--p)"></span>
+						</p>
 					</div>
 				</div>
 			</article>
@@ -154,12 +158,18 @@
 				<div class="btns" style="margin-top:0">
 					<button id="demo1">Super12</button>
 					<button id="demo2">SuperRegen12</button>
-					<button id="demo3">Venice16</button>
-					<button id="demo4">VeniceRegen16</button>
-					<button id="demo5">Alagard16</button>
-					<button id="demo6">Cairo16</button>
-					<button id="demo7">Ref16</button>
-					<button id="demo8">lsans-15</button>
+					<button id="demo3">SuperRegen13</button>
+					<button id="demo4">SuperRegen14</button>
+					<button id="demo5">Venice16</button>
+					<button id="demo6">VeniceRegen16</button>
+					<button id="demo7">VeniceRegen17</button>
+					<button id="demo8">VeniceRegen18</button>
+					<button id="demo9">VeniceRegen20</button>
+					<button id="demo10">VeniceRegen21</button>
+					<button id="demo11">Alagard16</button>
+					<button id="demo12">Cairo16</button>
+					<button id="demo13">Ref16</button>
+					<button id="demo14">lsans-15</button>
 				</div>
 			</article>
 		</aside>
