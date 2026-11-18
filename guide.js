@@ -181,7 +181,7 @@
 
 		dlg.querySelectorAll("[data-t]").forEach(b => {
 			const tab = /** @type {HTMLElement} */ (b);
-			tab.onclick = () => render(/** @type {string} */ (tab.dataset.t));
+			tab.onclick = () => render(/** @type {string} */(tab.dataset.t));
 		});
 		/** @type {HTMLButtonElement} */ (dlg.querySelector("#guideX")).onclick = () => dlg.close();
 		dlg.addEventListener("click", e => { if (e.target === dlg) dlg.close(); });

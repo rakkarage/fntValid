@@ -738,6 +738,11 @@ function autoFix() {
 
 	$("fixlog").textContent = log.join(" ") || "Nothing to fix.";
 	redrawAll();
+	// Auto-fix doubles as Export: keep the .fnt box in sync with the fixed
+	// metrics so the result is visible/copyable without an extra click.
+	// Copy and Download regenerate on click anyway, so they stay correct even
+	// if the box is edited afterwards.
+	$textarea("fnt").value = buildFntText();
 }
 
 //#endregion
@@ -748,9 +753,10 @@ function autoFix() {
  * @param {string} tag
  * @param {Record<string, any>} obj
  * @param {string[]} [preferredOrder]
+ * @param {string[]} [alwaysQuote] keys that get quotes even without spaces
  * @returns {string}
  */
-function formatAttributes(tag, obj, preferredOrder) {
+function formatAttributes(tag, obj, preferredOrder, alwaysQuote) {
 	const keys = preferredOrder
 		? [...preferredOrder, ...Object.keys(obj).filter(k => !preferredOrder.includes(k))]
 		: Object.keys(obj);
@@ -758,7 +764,7 @@ function formatAttributes(tag, obj, preferredOrder) {
 	return tag + keys.map(k => {
 		const v = obj[k];
 		if (v == null || v === "") return null;
-		const needsQuotes = /[\s"]/.test(String(v));
+		const needsQuotes = (alwaysQuote && alwaysQuote.includes(k)) || /[\s"]/.test(String(v));
 		return " " + k + "=" +
 			(needsQuotes ? `"${String(v).replace(/"/g, "")}"` : v);
 	}).filter(Boolean).join("");
@@ -779,7 +785,7 @@ function buildFntText() {
 	};
 
 	let out =
-		formatAttributes("info", info, ["face", "size"]) + "\n" +
+		formatAttributes("info", info, ["face", "size"], ["face"]) + "\n" +
 		formatAttributes("common", common, ["lineHeight", "base", "scaleW", "scaleH", "pages"]) + "\n";
 
 	pages.forEach(p => { out += p + "\n"; });
