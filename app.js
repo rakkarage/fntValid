@@ -1230,11 +1230,12 @@ $("demo1").onclick = () => loadDemo("Font/Super12.fnt", "Super12");
 $("demo2").onclick = () => loadDemo("Font/Super12Orig.fnt", "Super12Orig");
 $("demo3").onclick = () => loadDemo("Font/Super12Regen.fnt", "Super12Regen");
 $("demo4").onclick = () => loadDemo("Font/Venice16.fnt", "Venice16");
-$("demo5").onclick = () => loadDemo("Font/Venice64Orig.fnt", "Venice64Orig");
-$("demo6").onclick = () => loadDemo("Font/Venice16Regen.fnt", "Venice16Regen");
-$("demo7").onclick = () => loadDemo("Font/Alagard16.fnt", "Alagard16");
-$("demo8").onclick = () => loadDemo("Font/Cairo16.fnt", "Cairo16");
-$("demo9").onclick = () => loadDemo("Font/lsans-15.fnt", "lsans-15");
+$("demo5").onclick = () => loadDemo("Font/Venice16Fix.fnt", "Venice16Fix");
+$("demo6").onclick = () => loadDemo("Font/Venice64Orig.fnt", "Venice64Orig");
+$("demo7").onclick = () => loadDemo("Font/Venice16Regen.fnt", "Venice16Regen");
+$("demo8").onclick = () => loadDemo("Font/Alagard16.fnt", "Alagard16");
+$("demo9").onclick = () => loadDemo("Font/Cairo16.fnt", "Cairo16");
+$("demo10").onclick = () => loadDemo("Font/lsans-15.fnt", "lsans-15");
 
 //#endregion
 
