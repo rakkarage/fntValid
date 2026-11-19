@@ -207,7 +207,7 @@
 			const next = e.key === "Home" ? 0 : e.key === "End" ? tabs.length - 1
 				: e.key === "ArrowRight" ? (i + 1) % tabs.length
 					: (i - 1 + tabs.length) % tabs.length;
-			render(/** @type {string} */ (tabs[next].dataset.t));
+			render(/** @type {string} */(tabs[next].dataset.t));
 			tabs[next].focus();
 		});
 		btn.onclick = () => { render(); dlg.showModal(); };
