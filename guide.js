@@ -51,7 +51,7 @@
 		const r = 6, o = 4 * r;
 		/** @param {number} n */
 		const Y = n => o + n * r;
-		let s = `<svg viewBox="0 0 96 ${o + 16 * r + 12}" class="gmini">`;
+		let s = `<svg viewBox="0 0 96 ${o + 16 * r + 12}" class="gmini" aria-hidden="true" focusable="false">`;
 		/** @type {Array<[number, string]>} */
 		const guides = [[0, "--r"], [12, "--g"], [16, "--b"]];
 		for (const [n, v] of guides) s += ln(0, Y(n), 96, Y(n), v, 1.5);
@@ -66,7 +66,7 @@
 	 * @param {number} xo @param {number} w @param {number} xa @param {number} ok */
 	function hmini(xo, w, xa, ok) {
 		const c = 8, p = 30;
-		return `<svg viewBox="0 0 140 52" class="gmini h">` +
+		return `<svg viewBox="0 0 140 52" class="gmini h" aria-hidden="true" focusable="false">` +
 			ln(p, 4, p, 40, "--p", 1.5) + ln(p + xa * c, 4, p + xa * c, 40, "--p", 1.5, "3 2") +
 			`<rect x="${p + xo * c}" y="10" width="${w * c}" height="24" class="${ok ? "bf" : "bb"}"/>` +
 			tx(p, 50, "pen", "--p", 'text-anchor="middle"') + tx(p + xa * c, 50, "pen + xadvance", "--p", 'text-anchor="middle"') + `</svg>`;
@@ -155,9 +155,13 @@
 	function render(k = cur) {
 		cur = k;
 		body.innerHTML = TABS[k][1]();
+		body.setAttribute("aria-labelledby", `gdTab-${k}`);
 		dlg.querySelectorAll("[data-t]").forEach(b => {
 			const tab = /** @type {HTMLElement} */ (b);
-			tab.classList.toggle("on", tab.dataset.t === k);
+			const on = tab.dataset.t === k;
+			tab.classList.toggle("on", on);
+			tab.setAttribute("aria-selected", String(on));
+			tab.tabIndex = on ? 0 : -1;
 		});
 	}
 
@@ -168,25 +172,44 @@
 		btn.id = "guideBtn";
 		btn.textContent = "Guide";
 		btn.title = "How a character should sit: infographics";
+		btn.setAttribute("aria-haspopup", "dialog");
 		bar.prepend(btn);
 
 		dlg = document.createElement("dialog");
 		dlg.id = "guide";
-		dlg.innerHTML = `<div class="card-head"><h2>How a character should sit</h2><span class="sp"></span>
-			<button id="guideX">Close</button></div>
-			<div class="gd-tabs">${Object.entries(TABS).map(([k, [n]]) => `<button data-t="${k}">${n}</button>`).join("")}</div>
-			<div id="gdBody"></div>`;
+		dlg.setAttribute("aria-labelledby", "guideTitle");
+		dlg.innerHTML = `<div class="card-head"><h2 id="guideTitle">How a character should sit</h2><span class="sp"></span>
+			<button id="guideX" aria-label="Close guide">Close</button></div>
+			<div class="gd-tabs" role="tablist" aria-label="Guide topics">${Object.entries(TABS).map(([k, [n]]) => `<button data-t="${k}" role="tab" aria-controls="gdBody">${n}</button>`).join("")}</div>
+			<div id="gdBody" role="tabpanel" tabindex="0"></div>`;
 		document.body.append(dlg);
 		body = /** @type {HTMLElement} */ (dlg.querySelector("#gdBody"));
 
 		dlg.querySelectorAll("[data-t]").forEach(b => {
 			const tab = /** @type {HTMLElement} */ (b);
+			tab.id = `gdTab-${tab.dataset.t}`;
+			tab.tabIndex = -1;
 			tab.onclick = () => render(/** @type {string} */(tab.dataset.t));
 		});
 		/** @type {HTMLButtonElement} */ (dlg.querySelector("#guideX")).onclick = () => dlg.close();
 		dlg.addEventListener("click", e => { if (e.target === dlg) dlg.close(); });
-		// keep arrow keys from nudging glyphs behind the dialog
-		dlg.addEventListener("keydown", e => e.stopPropagation());
+		dlg.addEventListener("keydown", e => {
+			// Keep arrow keys from nudging glyphs behind the dialog, and let
+			// Left/Right/Home/End move between tabs as a tablist expects.
+			e.stopPropagation();
+			const target = e.target;
+			if (!(target instanceof HTMLElement)) return;
+			const tab = /** @type {HTMLElement|null} */ (target.closest("[data-t]"));
+			if (!tab || !["ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key)) return;
+			e.preventDefault();
+			const tabs = /** @type {HTMLElement[]} */ ([...dlg.querySelectorAll("[data-t]")]);
+			const i = tabs.indexOf(tab);
+			const next = e.key === "Home" ? 0 : e.key === "End" ? tabs.length - 1
+				: e.key === "ArrowRight" ? (i + 1) % tabs.length
+					: (i - 1 + tabs.length) % tabs.length;
+			render(/** @type {string} */ (tabs[next].dataset.t));
+			tabs[next].focus();
+		});
 		btn.onclick = () => { render(); dlg.showModal(); };
 	}
 

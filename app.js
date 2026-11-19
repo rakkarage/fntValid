@@ -124,6 +124,10 @@ function showEmptyState() {
 	summary.textContent = "No font loaded";
 	summary.className = "pill";
 
+	$("fname").textContent = "No font loaded";
+	$canvas("anat").setAttribute("aria-label", "Character anatomy preview. Load a font to see a glyph.");
+	$canvas("atlas").setAttribute("aria-label", "Font atlas overview. Load a font to see the atlas.");
+
 	$("chk").innerHTML = "";
 	$("grid").innerHTML = "";
 	$("selinfo").textContent = "Load a .fnt + .png, or use a demo.";
@@ -294,9 +298,14 @@ function drawGlyphAnatomy() {
 	$("xa").textContent = String(glyph.xa);
 	$("vbd").textContent = descenderDepth < 0 ? `(${descenderDepth})` : String(descenderDepth);
 	$("vbd").className = descenderDepth ? "warn" : "";
-	$("anaInfo").innerHTML =
-		`<b style="font-size:1.6em">\u201C${charFromCode(selectedCode)}\u201D</b> ` +
-		`<span class="mut">id ${selectedCode}</span>`;
+	// Build with text nodes: a font can contain `&`, `<` or `"` as a char id.
+	const label = document.createElement("b");
+	label.style.fontSize = "1.6em";
+	label.textContent = `\u201C${charFromCode(selectedCode)}\u201D`;
+	const idLabel = document.createElement("span");
+	idLabel.className = "mut";
+	idLabel.textContent = `id ${selectedCode}`;
+	$("anaInfo").replaceChildren(label, " ", idLabel);
 }
 
 function drawAtlasOverview() {
@@ -333,6 +342,10 @@ function renderGlyphGrid() {
 			(badChars.has(code) ? "bad " : "") +
 			(code === selectedCode ? "on" : "");
 		btn.title = `id ${code}`;
+		btn.setAttribute("aria-label",
+			`Select ${code === 32 ? "space" : charFromCode(code)}, id ${code}` +
+			(badChars.has(code) ? ", fails a check" : ""));
+		btn.setAttribute("aria-pressed", String(code === selectedCode));
 		btn.onclick = () => { selectedCode = code; redrawAll(); };
 		container.appendChild(btn);
 	}
@@ -350,6 +363,22 @@ function syncFormFields() {
 		`id ${selectedCode} \u201C${charFromCode(selectedCode)}\u201D ` +
 		`${glyph.w}\u00D7${glyph.h} @ ${glyph.x},${glyph.y}`;
 	$("fname").textContent = `${header.face} \u00B7 ${header.size}px`;
+
+	// Canvases are role=img, so keep their accessible names in sync with what
+	// the sighted user sees (selection, metrics and pass/fail count).
+	const total = Object.keys(glyphs).length;
+	const flagged = badChars.size;
+	$canvas("anat").setAttribute("aria-label",
+		`Character ${charFromCode(selectedCode)} (id ${selectedCode}): ` +
+		`xoffset ${glyph.xo}, yoffset ${glyph.yo}, width ${glyph.w}, height ${glyph.h}, ` +
+		`xadvance ${glyph.xa}. Baseline ${baseline}, lineHeight ${lineHeight}. ` +
+		`Red guide at the top/origin, green at the baseline, blue at lineHeight, ` +
+		`orange at the glyph bottom, purple at the advance.`);
+	$canvas("atlas").setAttribute("aria-label",
+		`Font atlas${header.pageFile ? ` from ${header.pageFile}` : ""}: ${total} glyphs, ` +
+		`${flagged ? `${flagged} flagged by checks` : "all checks passing"}. ` +
+		`Selected ${charFromCode(selectedCode)} (id ${selectedCode}). ` +
+		`Click the atlas or use the glyph buttons to choose another.`);
 }
 
 //#endregion
@@ -517,12 +546,15 @@ function runChecks() {
 
 		const row = document.createElement("div");
 		row.className = "chk " + (pass ? "ok" : "no");
+		row.setAttribute("role", "listitem");
 		row.innerHTML =
-			`<p><span class="ic">${pass ? "\u2713" : "\u2717"}</span>` +
+			`<p><span class="ic" aria-hidden="true">${pass ? "\u2713" : "\u2717"}</span>` +
+			`<span class="sr-only">${pass ? "Pass" : "Fail"}: </span>` +
 			`<span class="t">${label}</span>` +
 			`<span class="mut">${hintText}</span>` +
 			(count == null ? "" :
-				`<span class="cnt" style="color:var(${pass ? "--g" : "--y"})">${count}</span>`) +
+				`<span class="cnt" style="color:var(${pass ? "--g" : "--y"})">${count}` +
+				`<span class="sr-only"> glyphs failing</span></span>`) +
 			`</p>`;
 
 		if (failingCodes && failingCodes.length) {
@@ -532,6 +564,10 @@ function runChecks() {
 				const b = document.createElement("button");
 				b.textContent = glyphLabel(code);
 				b.className = code === selectedCode ? "on" : "";
+				b.setAttribute("aria-label",
+					`Select ${code === 32 ? "space" : charFromCode(code)}, id ${code}` +
+					(code === selectedCode ? ", selected" : ""));
+				b.setAttribute("aria-pressed", String(code === selectedCode));
 				b.onclick = () => { selectedCode = code; redrawAll(); };
 				chips.appendChild(b);
 			}
@@ -794,12 +830,14 @@ function buildFntText() {
 	// Align each field to the widest value actually present, like the source
 	// .fnt: numbers are left-aligned (trailing padding) and fields are joined
 	// by a single space. No arbitrary fixed widths, no right-aligned columns.
+	/** @type {Array<[string, keyof Glyph]>} */
 	const metrics = [
 		["x", "x"], ["y", "y"], ["width", "w"], ["height", "h"],
 		["xoffset", "xo"], ["yoffset", "yo"], ["xadvance", "xa"],
 	];
 	/** @type {Record<string, number>} */
 	const widths = {};
+	/** @param {string} key @param {number} value */
 	const grow = (key, value) => {
 		widths[key] = Math.max(widths[key] || 0, String(value).length);
 	};
@@ -807,6 +845,7 @@ function buildFntText() {
 		grow("id", n);
 		for (const [key, prop] of metrics) grow(key, glyphs[n][prop]);
 	}
+	/** @param {string} key @param {number} value */
 	const cell = (key, value) =>
 		`${key}=${String(value).padEnd(widths[key] || 0)}`;
 

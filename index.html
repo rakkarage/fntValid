@@ -4,7 +4,10 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+	<meta name="description"
+		content="Validate and fix BMFont (.fnt) glyph metrics — baseline, line height, offsets and advances — with visual checks and round-trip export.">
 	<title>fntValid</title>
+	<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%235b4bdb'/%3E%3Ctext x='32' y='44' font-family='sans-serif' font-size='36' font-weight='bold' text-anchor='middle' fill='white'%3Ef%3C/text%3E%3C/svg%3E">
 	<script>
 		try {
 			const saved = localStorage.getItem("theme");
@@ -19,73 +22,77 @@
 	<header class="topbar">
 		<div class="brand">
 			<div class="brand-mark">fnt<b>Valid</b></div>
-			<h1><span id="fname"></span></h1>
+			<h1><span class="sr-only">fntValid — </span><span id="fname">No font loaded</span></h1>
 		</div>
 		<div class="topbar-actions">
-			<span class="pill" id="sum">No font loaded</span>
-			<button id="theme" title="Toggle light / dark theme">Theme</button>
+			<span class="pill" id="sum" role="status">No font loaded</span>
+			<button id="theme" aria-label="Toggle light or dark theme" title="Toggle light / dark theme">Theme</button>
 		</div>
 	</header>
 
 	<main class="workspace">
 		<section class="column" aria-label="Visualization">
-			<article class="card">
+			<article class="card" aria-labelledby="hCharacter">
 				<div class="card-head">
-					<h2>Character</h2>
+					<h2 id="hCharacter">Character</h2>
 					<span class="sp"></span>
-					<span class="hint">Arrows nudge glyph · Shift x10 · Mod+←/→ select</span>
+					<span class="hint" id="anatHint">Arrows nudge glyph · Shift x10 · Mod+←/→ select</span>
 				</div>
 				<div class="preview-box">
-					<div class="sc"><canvas id="anat"
+					<div class="sc"><canvas id="anat" role="img" tabindex="0" aria-describedby="anatHint"
+							aria-label="Character anatomy preview. Dashed box = glyph rect at (xoffset, yoffset), size width × height. Faint fill = one advance × lineHeight cell. Colored guides are labeled in the legend."
 							title="Dashed box = glyph rect at (xoffset, yoffset), size width × height. Faint fill = one advance × lineHeight cell. Colored guides are labeled in the legend."></canvas>
 					</div>
-					<div class="overlay overlay-top" id="anaInfo"></div>
+					<div class="overlay overlay-top" id="anaInfo" aria-live="polite" aria-atomic="true"></div>
 					<div class="overlay overlay-bottom">
 						<p
 							title="Origin (0,0): pen position and top of the line box. The red cross marks both axes. 'Above top' fails when yoffset &lt; 0.">
-							<span class="mut">x = y =</span> <code>0,0</code> anchor<span class="dot"
+							<span class="mut">x = y =</span> <code>0,0</code> anchor<span class="dot" aria-hidden="true"
 								style="background:var(--r)"></span>
 						</p>
 						<p title="Baseline. Alphanumeric glyphs should end here: yoffset + height = base."><span
 								class="mut">yoffset + height =</span> <code id="vb"></code> base<span class="dot"
-								style="background:var(--g)"></span></p>
+								aria-hidden="true" style="background:var(--g)"></span></p>
 						<p
 							title="Line box height. The number is the slack between the lowest glyph bottom and lineHeight; 'Line height fits' checks it stays that way.">
 							<span class="mut">max(yoffset + height) +</span> <code id="vgap"></code> <span
-								class="mut">=</span> <code id="vl"></code> lineHeight<span class="dot"
+								class="mut">=</span> <code id="vl"></code> lineHeight<span class="dot" aria-hidden="true"
 								style="background:var(--b)"></span>
 						</p>
 						<p
 							title="bottom = yoffset + height. Descenders must fall below base. 'Past lineHeight' fails when bottom &gt; lineHeight.">
 							<span class="mut">yoffset + height =</span> <code id="vbbase"></code> <span
 								class="mut">+</span> <code id="vbd"></code> <span class="mut">=</span> <code
-								id="vbot"></code> bottom<span class="dot" style="background:var(--o)"></span>
+								id="vbot"></code> bottom<span class="dot" aria-hidden="true"
+								style="background:var(--o)"></span>
 						</p>
 						<p
 							title="xadvance = horizontal pen advance. 'Advance too small' fails when xadvance &lt; xoffset + width.">
 							<span class="mut">xoffset + width &le;</span> <code id="xa"></code> xadvance<span
-								class="dot" style="background:var(--p)"></span>
+								class="dot" aria-hidden="true" style="background:var(--p)"></span>
 						</p>
 					</div>
 				</div>
 			</article>
 
-			<article class="card">
+			<article class="card" aria-labelledby="hAtlas">
 				<div class="card-head">
-					<h2>Atlas</h2>
+					<h2 id="hAtlas">Atlas</h2>
 					<span class="sp"></span>
-					<span class="hint">Click the atlas or a glyph to select · yellow glyphs fail a check</span>
+					<span class="hint" id="atlasHint">Click the atlas or a glyph to select · Mod+←/→ navigate · yellow glyphs fail a check</span>
 				</div>
-				<div class="sc"><canvas id="atlas"></canvas></div>
-				<div id="grid"></div>
-				<p id="selinfo" class="mut"></p>
+				<div class="sc"><canvas id="atlas" role="img" tabindex="0" aria-describedby="atlasHint"
+						aria-label="Font atlas overview. Click a glyph to select it, or use the glyph buttons below."
+						title="Font atlas overview. Click a glyph to select it."></canvas></div>
+				<div id="grid" role="group" aria-label="Glyphs — choose one to inspect"></div>
+				<p id="selinfo" class="mut" role="status"></p>
 			</article>
 		</section>
 
 		<aside class="column" aria-label="Controls">
-			<article class="card" id="checkcard">
+			<article class="card" id="checkcard" aria-labelledby="hChecks">
 				<div class="card-head">
-					<h2>Checks</h2>
+					<h2 id="hChecks">Checks</h2>
 					<span class="sp"></span>
 					<button id="fix" class="pri"
 						title="Snap baseline and descenders, apply top gap, fit lineHeight, then refresh Export">Auto-fix</button>
@@ -101,13 +108,13 @@
 					<label title="One-shot command for Auto-fix; baked into the metrics and cleared after use">bottom
 						gap <input type="number" id="gap"></label>
 				</div>
-				<p class="mut" id="fixlog"></p>
-				<div id="chk"></div>
+				<p class="mut" id="fixlog" role="status"></p>
+				<div id="chk" role="list" aria-label="Metric check results"></div>
 			</article>
 
-			<article class="card" id="settings">
+			<article class="card" id="settings" aria-labelledby="hSettings">
 				<div class="card-head">
-					<h2>Settings</h2>
+					<h2 id="hSettings">Settings</h2>
 				</div>
 				<div class="field-row">
 					<label>yoffset <input type="number" id="iyo"></label>
@@ -135,28 +142,31 @@
 				</div>
 			</article>
 
-			<article class="card" id="filecard">
+			<article class="card" id="filecard" aria-labelledby="hFontFile">
 				<div class="card-head">
-					<h2>Font file</h2>
+					<h2 id="hFontFile">Font file</h2>
 					<span class="sp"></span>
 					<span class="key">drop files anywhere</span>
 				</div>
-				<textarea id="fnt" rows="7" spellcheck="false" placeholder="Paste .fnt here"></textarea>
+				<textarea id="fnt" rows="7" spellcheck="false" placeholder="Paste .fnt here"
+					aria-label="BMFont .fnt text"></textarea>
 				<div class="btns">
 					<button id="open" class="pri">Open .fnt + .png…</button>
-					<input type="file" id="files" accept=".fnt,.txt,.png,image/png" multiple hidden>
+					<input type="file" id="files" accept=".fnt,.txt,.png,image/png" multiple hidden
+						aria-label="Choose .fnt and .png files">
 					<button id="load">Load .fnt</button>
 					<button id="exp">Export</button>
 					<button id="cp">Copy</button>
 					<button id="dl">Download .fnt</button>
 				</div>
-				<p class="mut" id="hint">Drop a .fnt and/or its .png anywhere on this page, or open both together.
+				<p class="mut" id="hint" role="status">Drop a .fnt and/or its .png anywhere on this page, or open both
+					together.
 				</p>
 				<hr>
 				<div class="card-head" style="margin-bottom:6px">
-					<h2 style="font-size:.72rem">Demos</h2>
+					<h2 id="hDemos" style="font-size:.72rem">Demos</h2>
 				</div>
-				<div class="btns" style="margin-top:0">
+				<div class="btns" style="margin-top:0" role="group" aria-labelledby="hDemos">
 					<button id="demo1">Super12</button>
 					<button id="demo2">Super12Regen</button>
 					<button id="demo3">Venice16</button>

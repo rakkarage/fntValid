@@ -212,6 +212,19 @@
 		color: var(--mut)
 	}
 
+	/* Visible to screen readers only — for labels/icons that are visual by default. */
+	.sr-only {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		padding: 0;
+		margin: -1px;
+		overflow: hidden;
+		clip: rect(0, 0, 0, 0);
+		white-space: nowrap;
+		border: 0
+	}
+
 	.warn {
 		color: var(--o);
 		font-weight: 600
