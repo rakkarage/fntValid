@@ -1,6 +1,6 @@
 # fntValid — agent notes
 
-Static BMFont metric validator: plain HTML/CSS/classic JS, no framework, no `package.json`, no build or test runner. `index.html` is the only entrypoint; `app.js` is the app logic (~1162 lines), `guide.js` is an opt-in explainer overlay, `Font/` holds sample `.fnt` + `.png` pairs.
+Static BMFont metric validator: plain HTML/CSS/classic JS, no framework, no `package.json`, no build or test runner. `index.html` is the only entrypoint; `app.js` is the app logic (~1245 lines), `guide.js` is an opt-in explainer overlay, `Font/` holds sample `.fnt` + `.png` pairs.
 
 ## Run / verify
 
@@ -24,4 +24,4 @@ Static BMFont metric validator: plain HTML/CSS/classic JS, no framework, no `pac
 
 ## Demo paths
 
-- All seven demo buttons (`demo1`–`demo7` in `index.html`) now map one-to-one to their `loadDemo("Font/…")` calls in `app.js`, and every target exists in `Font/`. An older mismatch (a "VeniceRegen20" button fetching a nonexistent `VeniceRegen19.fnt`, plus mislabeled SuperRegen demos) was fixed. Still verify labels and paths against `Font/` when adding or renaming demos.
+- All nine demo buttons (`demo1`–`demo9` in `index.html`) map one-to-one to their `loadDemo("Font/…")` calls in `app.js`, and every target exists in `Font/`. Each `.fnt` must also declare a `page file=` matching an existing PNG: `loadDemo` derives the atlas path from that field, so a stale name silently breaks the atlas (and the pixel-based checks) while the hint still says "Loaded demo…". AutoFix `.fnt` files are generated on demand from the UI and are intentionally not committed. Past mismatches (a "VeniceRegen20" button fetching a nonexistent `VeniceRegen19.fnt`, mislabeled SuperRegen demos, a `Venice16Orig` button pointing at a missing file, and stale orig page declarations) were fixed. Still verify labels, paths, and page declarations against `Font/` when adding or renaming demos.
