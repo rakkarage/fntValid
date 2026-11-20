@@ -3,7 +3,7 @@
 /** @typedef {{ x:number, y:number, w:number, h:number, xo:number, yo:number, xa:number }} Glyph */
 /** @typedef {{ [code:number]: Glyph }} CharMap */
 /** @typedef {{ l:number, t:number, r:number, b:number }} InkBox */
-/** @typedef {{ face:string, size:number, scaleW:number, scaleH:number, pageFile:string }} Header */
+/** @typedef {{ face:string, size:number, scaleW:number, scaleH:number, pageFile:string, file:string }} Header */
 /**
  * @typedef {{
  *   label: string,
@@ -19,7 +19,7 @@ let glyphs = {};
 
 /** Font header fields from the "info", "common", and "page" lines. */
 /** @type {Header} */
-let header = { face: "", size: 0, scaleW: 0, scaleH: 0, pageFile: "" };
+let header = { face: "", size: 0, scaleW: 0, scaleH: 0, pageFile: "", file: "" };
 
 /** Baseline y and line height, in glyph space. */
 let baseline = 0;
@@ -362,8 +362,7 @@ function syncFormFields() {
 	$("selinfo").textContent =
 		`id ${selectedCode} \u201C${charFromCode(selectedCode)}\u201D ` +
 		`${glyph.w}\u00D7${glyph.h} @ ${glyph.x},${glyph.y}`;
-	$("fname").textContent = `${header.face} \u00B7 ${header.size}px`;
-
+	$("fname").textContent = (header.file ? `${header.file} \u00B7 ` : "") + `${header.face} \u00B7 ${header.size}px`;
 	// Canvases are role=img, so keep their accessible names in sync with what
 	// the sighted user sees (selection, metrics and pass/fail count).
 	const total = Object.keys(glyphs).length;
@@ -881,6 +880,9 @@ function parseFnt(text, basePath, skipImageLoad) {
 	/** @type {CharMap} */
 	const parsedGlyphs = {};
 	const h = { ...header };
+	// Keep the source .fnt name: it is often more distinguishing than `face`
+	// (several demos share a face but differ by Fix/Orig/Regen in the filename).
+	h.file = basePath ? basePath.replace(/^.*\//, "") : "";
 	let parsedLineHeight = lineHeight;
 	let parsedBaseline = baseline;
 
@@ -1160,7 +1162,7 @@ async function openFiles(list) {
 
 	if (pendingFnt != null && pendingPng) {
 		$textarea("fnt").value = pendingFnt;
-		if (parseFnt(pendingFnt, null, true)) {
+		if (parseFnt(pendingFnt, fnt ? fnt.name : null, true)) {
 			header.scaleW = atlasImage.width;
 			header.scaleH = atlasImage.height;
 			redrawAll();
@@ -1170,7 +1172,7 @@ async function openFiles(list) {
 		}
 	} else if (pendingFnt != null) {
 		$textarea("fnt").value = pendingFnt;
-		if (parseFnt(pendingFnt, null, true)) {
+		if (parseFnt(pendingFnt, fnt ? fnt.name : null, true)) {
 			$("hint").textContent = "Loaded .fnt. Now add the matching .png (or drop/open both together).";
 		} else {
 			$("hint").textContent = "Could not parse .fnt.";
