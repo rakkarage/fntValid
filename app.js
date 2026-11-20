@@ -762,6 +762,15 @@ function autoFix() {
 	lineHeight = maxBottom + bottomGap;
 	if (lineHeight !== oldLH) log.push(`lineHeight ${oldLH} \u2192 ${lineHeight}.`);
 
+	// Keep the info "size" metadata in sync with the fixed metrics instead of
+	// round-tripping a stale value. BMFont's size is the rendered pixel size;
+	// across the sample fonts lineHeight is the metric that tracks it most
+	// closely (often exactly), so AutoFix writes that to header.size — which
+	// buildFntText() uses for the exported info line and the filename pill.
+	const oldSize = header.size;
+	header.size = lineHeight;
+	if (oldSize !== header.size) log.push(`size ${oldSize} \u2192 ${header.size}.`);
+
 	// The gap inputs are one-shot commands: their values are now baked into
 	// yoffset/lineHeight, so clear them. Re-derive the applied gaps from the
 	// resulting metrics — exactly what a reload would infer from the .fnt —
