@@ -1,5 +1,5 @@
 info face="VeniceClassic" size=16
-common lineHeight=16 base=13 scaleW=171 scaleH=86 pages=1
+common lineHeight=16 base=13 scaleW=171 scaleH=79 pages=1
 page id=0 file="Venice16Fix.png"
 chars count=95
 char id=32  x=32  y=63 width=5  height=12 xoffset=0 yoffset=3  xadvance=5  page=0 chnl=0 letter="space"
